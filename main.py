@@ -25,7 +25,7 @@ from services.mail_service import send_wbs_email
 from db import queries
 from core.config import settings
 
-app = FastAPI(title="WBS AI System", version="1.0.0")
+app = FastAPI(title="WBS AI System", version="1.0.1")
 
 app.add_middleware(
     CORSMiddleware,
