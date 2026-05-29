@@ -1,0 +1,10 @@
+.env
+scripts/token.json
+scripts/credentials.json
+outputs/
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.xlsx
+*.log

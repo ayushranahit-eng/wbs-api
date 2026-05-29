@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WBS AI System</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f4f9;
+      color: #202124;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .main-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* NAV */
+    nav {
+      background: #1a73e8;
+      padding: 0 40px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    nav .logo {
+      color: #fff;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    nav .logo span { color: #a8c7fa; font-weight: 400; }
+    .nav-btn {
+      background: rgba(255,255,255,0.15);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.3);
+      padding: 7px 18px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .nav-btn:hover { background: rgba(255,255,255,0.25); }
+
+    /* LAYOUT */
+    .container {
+      flex: 1;
+      max-width: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 32px 40px;
+      box-sizing: border-box;
+    }
+
+    .page-title {
+      font-size: 26px;
+      font-weight: 700;
+      color: #1a73e8;
+      margin-bottom: 4px;
+    }
+    .page-subtitle {
+      font-size: 14px;
+      color: #5f6368;
+      margin-bottom: 32px;
+    }
+
+    /* CARD */
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 32px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+      margin-bottom: 24px;
+    }
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1a73e8;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #e8eaed;
+    }
+
+    /* FORM */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .form-group.full { grid-column: 1 / -1; }
+    label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #3c4043;
+    }
+    input, textarea, select {
+      padding: 10px 14px;
+      border: 1px solid #dadce0;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #202124;
+      background: #fff;
+      transition: border-color 0.2s;
+      outline: none;
+      font-family: inherit;
+    }
+    input:focus, textarea:focus {
+      border-color: #1a73e8;
+      box-shadow: 0 0 0 3px rgba(26,115,232,0.1);
+    }
+    textarea { resize: vertical; min-height: 100px; }
+
+    /* CONFIG GRID */
+    .config-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .config-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #f8f9fa;
+      border: 1px solid #e8eaed;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: #3c4043;
+      font-weight: 500;
+    }
+    .toggle {
+      position: relative;
+      width: 36px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: #dadce0;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      background: #fff;
+      border-radius: 50%;
+      top: 3px;
+      left: 3px;
+      transition: transform 0.2s;
+    }
+    .toggle input:checked + .toggle-slider { background: #1a73e8; }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(16px); }
+
+    /* SUBMIT */
+    .btn-primary {
+      background: #1a73e8;
+      color: #fff;
+      border: none;
+      padding: 12px 32px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      width: 100%;
+      margin-top: 8px;
+    }
+    .btn-primary:hover { background: #1557b0; }
+    .btn-primary:disabled { background: #a8c7fa; cursor: not-allowed; }
+
+    /* PROGRESS BAR */
+    .progress-bar-wrap {
+      background: #e8eaed;
+      border-radius: 20px;
+      height: 8px;
+      margin-bottom: 24px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: #1a73e8;
+      border-radius: 20px;
+      width: 0%;
+      transition: width 0.5s ease;
+    }
+    .progress-bar-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #5f6368;
+      margin-bottom: 8px;
+    }
+    .progress-bar-label span { font-weight: 600; color: #1a73e8; }
+
+    /* PROGRESS */
+    #progress-section { display: none; }
+
+    .job-id-badge {
+      background: #e8f0fe;
+      color: #1a73e8;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 20px;
+      display: inline-block;
+      margin-bottom: 20px;
+      font-family: monospace;
+    }
+
+    .steps { display: flex; flex-direction: column; gap: 10px; }
+
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 16px;
+      border-radius: 10px;
+      background: #f8f9fa;
+      border: 1px solid #e8eaed;
+      transition: all 0.3s;
+    }
+    .step.running {
+      background: #e8f0fe;
+      border-color: #1a73e8;
+    }
+    .step.done {
+      background: #e6f4ea;
+      border-color: #34a853;
+    }
+    .step.error {
+      background: #fce8e6;
+      border-color: #ea4335;
+    }
+
+    .step-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      background: #e8eaed;
+    }
+    .step-icon svg {
+      width: 18px;
+      height: 18px;
+      stroke: #5f6368;
+    }
+    .step.running .step-icon { background: #1a73e8; }
+    .step.running .step-icon svg { stroke: #fff; }
+    .step.done .step-icon { background: #34a853; }
+    .step.done .step-icon svg { stroke: #fff; }
+    .step.error .step-icon { background: #ea4335; }
+    .step.error .step-icon svg { stroke: #fff; }
+
+    .step-info { flex: 1; }
+    .step-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #202124;
+    }
+    .step-detail {
+      font-size: 12px;
+      color: #5f6368;
+      margin-top: 2px;
+    }
+
+    .step-status {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 12px;
+      background: #e8eaed;
+      color: #5f6368;
+    }
+    .step.running .step-status { background: #1a73e8; color: #fff; }
+    .step.done .step-status { background: #34a853; color: #fff; }
+    .step.error .step-status { background: #ea4335; color: #fff; }
+
+    /* SPINNER */
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* RESULT */
+    #result-section { display: none; }
+
+    .result-card {
+      background: #e6f4ea;
+      border: 1px solid #34a853;
+      border-radius: 12px;
+      padding: 24px 28px;
+    }
+    .result-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #188038;
+      margin-bottom: 16px;
+    }
+    .download-btns {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .btn-download {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      text-decoration: none;
+      transition: opacity 0.2s;
+    }
+    .btn-download:hover { opacity: 0.85; }
+    .btn-full { background: #1a73e8; color: #fff; }
+    .btn-sales { background: #188038; color: #fff; }
+
+    /* ERROR */
+    #error-section { display: none; }
+    .error-card {
+      background: #fce8e6;
+      border: 1px solid #ea4335;
+      border-radius: 12px;
+      padding: 20px 24px;
+      color: #c5221f;
+      font-size: 14px;
+    }
+    .error-card strong { display: block; margin-bottom: 6px; font-size: 15px; }
+
+    #home-page {
+      max-width: 900px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    #jobs-page {
+      width: 100%;
+    }
+    .jobs-header {
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .btn-back {
+      background: none;
+      border: 1px solid #dadce0;
+      color: #3c4043;
+      padding: 7px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.2s;
+    }
+    .btn-back:hover { background: #f1f3f4; }
+    .btn-back svg { width: 14px; height: 14px; stroke: #3c4043; }
+    .jobs-table-wrap { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    thead tr {
+      background: #1a73e8;
+      color: #fff;
+    }
+    thead th {
+      padding: 12px 14px;
+      text-align: left;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    tbody tr {
+      border-bottom: 1px solid #e8eaed;
+      transition: background 0.15s;
+    }
+    tbody tr:hover { background: #f8f9fa; }
+    tbody td {
+      padding: 11px 14px;
+      color: #3c4043;
+      vertical-align: top;
+    }
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .badge-done    { background: #e6f4ea; color: #188038; }
+    .badge-running { background: #e8f0fe; color: #1a73e8; }
+    .badge-failed  { background: #fce8e6; color: #c5221f; }
+    .badge-pending { background: #f1f3f4; color: #5f6368; }
+    .config-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+    .config-tag {
+      background: #e8f0fe;
+      color: #1a73e8;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 500;
+    }
+    .btn-regen {
+      background: #1a73e8;
+      color: #fff;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s;
+    }
+    .btn-regen:hover { background: #1557b0; }
+    .no-jobs {
+      text-align: center;
+      padding: 48px;
+      color: #5f6368;
+      font-size: 14px;
+    }
+
+    @media (max-width: 600px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .config-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">WBS <span>AI System</span></div>
+  <button class="nav-btn" onclick="showPage('jobs')">Recent Jobs</button>
+</nav>
+
+<div class="main-wrap">
+<div class="container">
+  <div id="home-page">
+  <div class="page-title">Generate Work Breakdown Structure</div>
+  <div class="page-subtitle">Fill in the project details and let AI build your WBS automatically.</div>
+
+  <!-- FORM -->
+  <div id="form-section">
+    <div class="card">
+      <div class="card-title">Project Details</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Project Title</label>
+          <input type="text" id="project_title" placeholder="e.g. Zaika Restaurant" />
+        </div>
+        <div class="form-group">
+          <label>Company Name</label>
+          <input type="text" id="company_name" placeholder="e.g. Zaika Hospitality" />
+        </div>
+        <div class="form-group">
+          <label>Project Manager</label>
+          <input type="text" id="project_manager" placeholder="e.g. Mr. Ayush Rana" />
+        </div>
+        <div class="form-group">
+          <label>Team Size</label>
+          <input type="number" id="team_size" placeholder="e.g. 5" min="1" />
+        </div>
+        <div class="form-group">
+          <label>Project Start Date</label>
+          <input type="text" id="project_start_date" placeholder="e.g. 01-Jun-26" />
+        </div>
+        <div class="form-group">
+          <label>Recipient Email (optional)</label>
+          <input type="email" id="recipient_email" placeholder="e.g. client@company.com" />
+        </div>
+        <div class="form-group full">
+          <label>Project Scope</label>
+          <textarea id="rough_scope" placeholder="Describe the project in your own words..."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Delivery Configuration</div>
+      <div class="config-grid">
+        <div class="config-item">
+          Business Analysis
+          <label class="toggle"><input type="checkbox" id="business_analysis" checked /><span class="toggle-slider"></span></label>
+        </div>
+        <div class="config-item">
+          UI/UX Design
+          <label class="toggle"><input type="checkbox" id="ui_ux" checked /><span class="toggle-slider"></span></label>
+        </div>
+        <div class="config-item">
+          Frontend
+          <label class="toggle"><input type="checkbox" id="frontend" checked /><span class="toggle-slider"></span></label>
+        </div>
+        <div class="config-item">
+          Backend
+          <label class="toggle"><input type="checkbox" id="backend" checked /><span class="toggle-slider"></span></label>
+        </div>
+        <div class="config-item">
+          Mobile Native
+          <label class="toggle"><input type="checkbox" id="mobile_native" /><span class="toggle-slider"></span></label>
+        </div>
+        <div class="config-item">
+          Mobile Hybrid
+          <label class="toggle"><input type="checkbox" id="mobile_hybrid" /><span class="toggle-slider"></span></label>
+        </div>
+        <div class="config-item">
+          API Development
+          <label class="toggle"><input type="checkbox" id="api" checked /><span class="toggle-slider"></span></label>
+        </div>
+        <div class="config-item">
+          3rd Party API
+          <label class="toggle"><input type="checkbox" id="api_integration" /><span class="toggle-slider"></span></label>
+        </div>
+        <div class="config-item">
+          Testing & Deployment
+          <label class="toggle"><input type="checkbox" id="testing_deployment" checked /><span class="toggle-slider"></span></label>
+        </div>
+        <div class="config-item">
+          Source Code Delivery
+          <label class="toggle"><input type="checkbox" id="source_code_delivery" checked /><span class="toggle-slider"></span></label>
+        </div>
+        <div class="config-item">
+          Free Support 30 Days
+          <label class="toggle"><input type="checkbox" id="free_support_30" /><span class="toggle-slider"></span></label>
+        </div>
+        <div class="config-item">
+          Free Support 45 Days
+          <label class="toggle"><input type="checkbox" id="free_support_45" /><span class="toggle-slider"></span></label>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="submitForm()">Generate WBS</button>
+  </div>
+
+  <!-- PROGRESS -->
+  <div id="progress-section">
+    <div class="card">
+      <div class="card-title">Generating Your WBS</div>
+      <div id="job-id-badge" class="job-id-badge"></div>
+      <div class="progress-bar-label">
+        <span id="progress-label-text">Starting...</span>
+        <span id="progress-percent">0%</span>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="progress-bar"></div>
+      </div>
+      <div class="steps" id="steps-container"></div>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div id="result-section">
+    <div class="result-card">
+      <div class="result-title">WBS Generated Successfully</div>
+      <div class="download-btns">
+        <a id="btn-full-wbs" class="btn-download btn-full" href="#">Download Full WBS</a>
+        <a id="btn-sales-wbs" class="btn-download btn-sales" href="#">Download Sales WBS</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ERROR -->
+  <div id="error-section">
+    <div class="error-card">
+      <strong>Generation Failed</strong>
+      <span id="error-message"></span>
+    </div>
+  </div>
+
+  </div><!-- end home-page -->
+
+  <!-- JOBS PAGE -->
+  <div id="jobs-page" style="display:none;">
+    <div class="jobs-header">
+      <div>
+        <div class="page-title">Recent Jobs</div>
+        <div class="page-subtitle">Last 50 WBS generation jobs</div>
+      </div>
+      <button class="btn-back" onclick="showPage('home')">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        Back
+      </button>
+    </div>
+    <div class="card">
+      <div class="jobs-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Project</th>
+              <th>Company</th>
+              <th>Manager</th>
+              <th>Start Date</th>
+              <th>Team</th>
+              <th>Delivery Config</th>
+              <th>Status</th>
+              <th>Created</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="jobs-tbody">
+            <tr><td colspan="9" class="no-jobs">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div><!-- end jobs-page -->
+
+</div><!-- end container -->
+</div><!-- end main-wrap -->
+
+<script>
+  let API_BASE = "http://127.0.0.1:8000"
+
+  async function initConfig() {
+    try {
+      const res = await fetch(`${API_BASE}/config`)
+      const data = await res.json()
+      API_BASE = data.api_base_url
+    } catch (e) {
+      console.warn("Could not fetch config, using default API_BASE")
+    }
+  }
+
+  initConfig()
+
+  const CONFIG_LABELS = {
+    business_analysis:    "Business Analysis",
+    ui_ux:                "UI/UX Design",
+    frontend:             "Frontend",
+    backend:              "Backend",
+    mobile_native:        "Mobile Native",
+    mobile_hybrid:        "Mobile Hybrid",
+    api:                  "API Dev",
+    api_integration:      "3rd Party API",
+    testing_deployment:   "Testing & Deploy",
+    source_code_delivery: "Source Code",
+    free_support_30:      "Support 30 Days",
+    free_support_45:      "Support 45 Days",
+  }
+
+  function showPage(page) {
+    document.getElementById("home-page").style.display  = page === "home" ? "block" : "none"
+    document.getElementById("jobs-page").style.display  = page === "jobs" ? "block" : "none"
+    if (page === "jobs") loadJobs()
+  }
+
+  async function loadJobs() {
+    const tbody = document.getElementById("jobs-tbody")
+    tbody.innerHTML = `<tr><td colspan="9" class="no-jobs">Loading...</td></tr>`
+    try {
+      const res = await fetch(`${API_BASE}/jobs`)
+      const jobs = await res.json()
+      if (!jobs.length) {
+        tbody.innerHTML = `<tr><td colspan="9" class="no-jobs">No jobs found.</td></tr>`
+        return
+      }
+      tbody.innerHTML = jobs.map(job => {
+        const cfg = job.project_config || {}
+        const tags = Object.entries(cfg)
+          .filter(([, v]) => v === "Y")
+          .map(([k]) => `<span class="config-tag">${CONFIG_LABELS[k] || k}</span>`)
+          .join("")
+        const statusClass = { done: "badge-done", running: "badge-running", failed: "badge-failed", pending: "badge-pending" }[job.status] || "badge-pending"
+        const created = job.created_at ? new Date(job.created_at).toLocaleString() : "-"
+        return `
+          <tr>
+            <td><strong>${job.project_title || "-"}</strong></td>
+            <td>${job.company_name || "-"}</td>
+            <td>${job.project_manager || "-"}</td>
+            <td>${job.project_start_date || "-"}</td>
+            <td>${job.team_size || "-"}</td>
+            <td><div class="config-tags">${tags || "-"}</div></td>
+            <td><span class="badge ${statusClass}">${job.status}</span></td>
+            <td>${created}</td>
+            <td><button class="btn-regen" onclick='regenJob(${JSON.stringify(job)})'>Regenerate</button></td>
+          </tr>`
+      }).join("")
+    } catch (e) {
+      tbody.innerHTML = `<tr><td colspan="9" class="no-jobs">Failed to load jobs.</td></tr>`
+    }
+  }
+
+  function regenJob(job) {
+    showPage("home")
+    document.getElementById("project_title").value      = job.project_title || ""
+    document.getElementById("company_name").value       = job.company_name || ""
+    document.getElementById("project_manager").value   = job.project_manager || ""
+    document.getElementById("team_size").value          = job.team_size || ""
+    document.getElementById("project_start_date").value = job.project_start_date || ""
+    document.getElementById("rough_scope").value        = job.rough_scope || ""
+    document.getElementById("recipient_email").value    = job.recipient_email || ""
+    const cfg = job.project_config || {}
+    Object.keys(cfg).forEach(key => {
+      const el = document.getElementById(key)
+      if (el) el.checked = cfg[key] === "Y"
+    })
+    document.getElementById("form-section").style.display    = "block"
+    document.getElementById("progress-section").style.display = "none"
+    document.getElementById("result-section").style.display   = "none"
+    document.getElementById("error-section").style.display    = "none"
+    document.querySelector(".btn-primary").disabled = false
+  }
+
+  const ICONS = {
+    scope:   `<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`,
+    modules: `<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>`,
+    phases:  `<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
+    tasks:   `<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>`,
+    excel:   `<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><polyline points="8 13 10.5 16 8 19"/><line x1="13" y1="13" x2="16" y2="19"/></svg>`,
+    email:   `<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>`,
+    check:   `<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+    error:   `<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
+  }
+
+  const STEP_META = {
+    "Scope Agent":   { icon: ICONS.scope,   label: "Understanding Your Project",  desc: "Reading your project description and identifying what needs to be built" },
+    "Module Agent":  { icon: ICONS.modules, label: "Identifying Key Features",     desc: "Breaking the project into main feature areas" },
+    "Phase Agent":   { icon: ICONS.phases,  label: "Planning Delivery Phases",     desc: "Organising features into a logical delivery timeline" },
+    "Task Agent":    { icon: ICONS.tasks,   label: "Generating Detailed Tasks",    desc: "Creating tasks and sub-tasks for each delivery phase" },
+    "Excel Builder": { icon: ICONS.excel,   label: "Preparing Your WBS File",      desc: "Building and formatting the Excel spreadsheet" },
+    "Email Service": { icon: ICONS.email,   label: "Sending to Your Inbox",        desc: "Delivering the completed WBS files to your email" },
+  }
+
+  const TOTAL_STEPS = 6
+  let completedSteps = 0
+
+  function updateProgressBar(label) {
+    completedSteps++
+    const pct = Math.round((completedSteps / TOTAL_STEPS) * 100)
+    document.getElementById("progress-bar").style.width = pct + "%"
+    document.getElementById("progress-percent").textContent = pct + "%"
+    document.getElementById("progress-label-text").textContent = label
+  }
+
+  function resetProgressBar() {
+    completedSteps = 0
+    document.getElementById("progress-bar").style.width = "0%"
+    document.getElementById("progress-percent").textContent = "0%"
+    document.getElementById("progress-label-text").textContent = "Starting..."
+  }
+
+  let stepEls = {}
+  let currentJobId = null
+
+  function yn(checked) { return checked ? "Y" : "N" }
+
+  async function submitForm() {
+    const payload = {
+      project_title:      document.getElementById("project_title").value.trim(),
+      company_name:       document.getElementById("company_name").value.trim(),
+      project_manager:    document.getElementById("project_manager").value.trim(),
+      team_size:          parseInt(document.getElementById("team_size").value),
+      project_start_date: document.getElementById("project_start_date").value.trim(),
+      rough_scope:        document.getElementById("rough_scope").value.trim(),
+      recipient_email:    document.getElementById("recipient_email").value.trim() || null,
+      project_config: {
+        business_analysis:   yn(document.getElementById("business_analysis").checked),
+        ui_ux:               yn(document.getElementById("ui_ux").checked),
+        frontend:            yn(document.getElementById("frontend").checked),
+        backend:             yn(document.getElementById("backend").checked),
+        mobile_native:       yn(document.getElementById("mobile_native").checked),
+        mobile_hybrid:       yn(document.getElementById("mobile_hybrid").checked),
+        api:                 yn(document.getElementById("api").checked),
+        api_integration:     yn(document.getElementById("api_integration").checked),
+        testing_deployment:  yn(document.getElementById("testing_deployment").checked),
+        source_code_delivery:yn(document.getElementById("source_code_delivery").checked),
+        free_support_30:     yn(document.getElementById("free_support_30").checked),
+        free_support_45:     yn(document.getElementById("free_support_45").checked),
+      }
+    }
+
+    if (!payload.project_title || !payload.rough_scope) {
+      alert("Please fill in Project Title and Project Scope.")
+      return
+    }
+
+    document.querySelector(".btn-primary").disabled = true
+
+    const res = await fetch(`${API_BASE}/generate-wbs`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+
+    const data = await res.json()
+    currentJobId = data.job_id
+
+    showProgress(currentJobId)
+    resetProgressBar()
+    listenSSE(currentJobId)
+  }
+
+  function showProgress(jobId) {
+    document.getElementById("form-section").style.display = "none"
+    document.getElementById("progress-section").style.display = "block"
+    document.getElementById("job-id-badge").textContent = `Job ID: ${jobId}`
+
+    const container = document.getElementById("steps-container")
+    container.innerHTML = ""
+    stepEls = {}
+
+    Object.entries(STEP_META).forEach(([key, meta]) => {
+      const el = document.createElement("div")
+      el.className = "step"
+      el.id = `step-${key.replace(" ", "-")}`
+      el.innerHTML = `
+        <div class="step-icon" id="icon-${key.replace(" ", "-")}">${meta.icon}</div>
+        <div class="step-info">
+          <div class="step-name">${meta.label}</div>
+          <div class="step-detail" id="detail-${key.replace(" ", "-")}">${meta.desc}</div>
+        </div>
+        <div class="step-status" id="status-${key.replace(" ", "-")}">Waiting</div>
+      `
+      container.appendChild(el)
+      stepEls[key] = el
+    })
+  }
+
+  function setStep(agent, state, detail = null) {
+    const key = agent.replace(" ", "-")
+    const el = document.getElementById(`step-${key}`)
+    const statusEl = document.getElementById(`status-${key}`)
+    const detailEl = document.getElementById(`detail-${key}`)
+    const iconEl = document.getElementById(`icon-${key}`)
+    if (!el) return
+
+    el.className = `step ${state}`
+
+    if (state === "running") {
+      statusEl.innerHTML = `<span class="spinner"></span>`
+      iconEl.innerHTML = STEP_META[agent]?.icon || ""
+    } else if (state === "done") {
+      statusEl.textContent = "Done"
+      iconEl.innerHTML = ICONS.check
+    } else if (state === "error") {
+      statusEl.textContent = "Failed"
+      iconEl.innerHTML = ICONS.error
+    }
+
+    if (detail) detailEl.textContent = detail
+  }
+
+  function listenSSE(jobId) {
+    const source = new EventSource(`${API_BASE}/status/${jobId}`)
+
+    source.addEventListener("progress", (e) => {
+      const d = JSON.parse(e.data)
+      const agent = d.agent
+
+      if (d.status === "running") {
+        const detail = d.phase ? `Phase ${d.phase_index} of ${d.total_phases}: ${d.phase}` : null
+        setStep(agent, "running", detail)
+      }
+
+      if (d.status === "done") {
+        let detail = null
+        if (d.result && Array.isArray(d.result)) detail = d.result.join(", ")
+        if (d.task_count) detail = `${d.task_count} tasks generated for ${d.phase}`
+        if (d.recipient) detail = `Sent to ${d.recipient}`
+        setStep(agent, "done", detail)
+        updateProgressBar(STEP_META[agent]?.label || agent)
+      }
+    })
+
+    source.addEventListener("done", (e) => {
+      const d = JSON.parse(e.data)
+      source.close()
+      showResult(d)
+    })
+
+    source.addEventListener("error", (e) => {
+      try {
+        const d = JSON.parse(e.data)
+        showError(d.message)
+      } catch {
+        showError("An unexpected error occurred.")
+      }
+      source.close()
+    })
+  }
+
+  function showResult(data) {
+    document.getElementById("result-section").style.display = "block"
+
+    const jobId = currentJobId
+    document.getElementById("btn-full-wbs").href = `${API_BASE}/download/${jobId}/full_wbs`
+    document.getElementById("btn-sales-wbs").href = `${API_BASE}/download/${jobId}/sales_wbs`
+  }
+
+  function showError(msg) {
+    document.getElementById("error-section").style.display = "block"
+    document.getElementById("error-message").textContent = msg
+
+    Object.keys(stepEls).forEach(key => {
+      const el = stepEls[key]
+      if (el && el.classList.contains("running")) setStep(key, "error")
+    })
+  }
+</script>
+</body>
+</html>
