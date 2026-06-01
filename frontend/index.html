@@ -126,6 +126,13 @@
       grid-column: 1 / -1;
     }
 
+    .scope-row {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
     label {
       font-size: 13px;
       font-weight: 600;
@@ -155,6 +162,60 @@
     textarea {
       resize: vertical;
       min-height: 100px;
+    }
+
+    .supporting-files {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+      min-height: 100px;
+      border: 1px dashed #c6d5ef;
+      border-radius: 8px;
+      padding: 16px;
+      background: #f8f9fa;
+    }
+
+    .supporting-files input {
+      display: none;
+    }
+
+    .file-upload-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 32px;
+      padding: 7px 12px;
+      border-radius: 6px;
+      background: #1a73e8;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .file-upload-btn:hover {
+      background: #1557b0;
+    }
+
+    .file-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      width: 100%;
+      color: #5f6368;
+      font-size: 12px;
+    }
+
+    .file-pill {
+      background: #fff;
+      border: 1px solid #e8eaed;
+      border-radius: 6px;
+      padding: 6px 8px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     /* CONFIG GRID */
@@ -862,6 +923,10 @@
         grid-template-columns: 1fr;
       }
 
+      .scope-row {
+        grid-template-columns: 1fr;
+      }
+
       .config-grid {
         grid-template-columns: 1fr 1fr;
       }
@@ -915,9 +980,20 @@
                 <label>CC</label>
                 <div class="smart-list" id="cc_list"></div>
               </div>
-              <div class="form-group full">
-                <label>Project Scope</label>
-                <textarea id="rough_scope" placeholder="Describe the project in your own words..."></textarea>
+              <div class="scope-row">
+                <div class="form-group">
+                  <label>Project Scope</label>
+                  <textarea id="rough_scope" placeholder="Describe the project in your own words..."></textarea>
+                </div>
+                <div class="form-group">
+                  <label>Supporting Documents</label>
+                  <div class="supporting-files">
+                    <label class="file-upload-btn" for="supporting_files">Add Supporting Documents</label>
+                    <input type="file" id="supporting_files" accept=".pdf,.txt,application/pdf,text/plain" multiple
+                      onchange="renderSupportingFiles()" />
+                    <div class="file-list" id="supporting_file_list"></div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1073,7 +1149,7 @@
   </div><!-- end main-wrap -->
 
   <script>
-    const API_BASE = "https://wbs-api-production-4d02.up.railway.app"
+    const API_BASE = "http://127.0.0.1:8000"
 
     // -- MANAGERS --
     let selectedManager = ""
@@ -1391,7 +1467,7 @@
       const pagination = document.getElementById("jobs-pagination")
 
       if (!allJobs.length) {
-          tbody.innerHTML = `<tr><td colspan="9" class="no-jobs">No jobs found.</td></tr>`
+        tbody.innerHTML = `<tr><td colspan="9" class="no-jobs">No jobs found.</td></tr>`
         pagination.innerHTML = ""
         return
       }
@@ -1451,6 +1527,9 @@
       document.getElementById("team_size").value = job.team_size || ""
       document.getElementById("project_start_date").value = toDateInputValue(job.project_start_date)
       document.getElementById("rough_scope").value = job.rough_scope || ""
+      document.getElementById("supporting_files").value = ""
+      supportingFiles = []
+      document.getElementById("supporting_file_list").innerHTML = ""
       selectedRecipients = job.recipient_emails || []
       selectedCC = job.cc_emails || []
       renderManagerList()
@@ -1508,8 +1587,33 @@
 
     let stepEls = {}
     let currentJobId = null
+    let supportingFiles = []
 
     function yn(checked) { return checked ? "Y" : "N" }
+
+    function renderSupportingFiles() {
+      const input = document.getElementById("supporting_files")
+      const list = document.getElementById("supporting_file_list")
+      const newFiles = Array.from(input.files || [])
+
+      newFiles.forEach(file => {
+        const exists = supportingFiles.some(existing =>
+          existing.name === file.name &&
+          existing.size === file.size &&
+          existing.lastModified === file.lastModified
+        )
+        if (!exists) supportingFiles.push(file)
+      })
+
+      input.value = ""
+      list.innerHTML = ""
+      supportingFiles.forEach(file => {
+        const item = document.createElement("div")
+        item.className = "file-pill"
+        item.textContent = file.name
+        list.appendChild(item)
+      })
+    }
 
     async function submitForm() {
       const payload = {
@@ -1549,11 +1653,31 @@
 
       document.querySelector(".btn-primary").disabled = true
 
-      const res = await fetch(`${API_BASE}/generate-wbs`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      })
+      let res
+      if (supportingFiles.length) {
+        const formData = new FormData()
+        formData.append("project_title", payload.project_title)
+        formData.append("company_name", payload.company_name)
+        formData.append("project_manager", payload.project_manager)
+        formData.append("team_size", payload.team_size)
+        formData.append("project_start_date", payload.project_start_date)
+        formData.append("rough_scope", payload.rough_scope)
+        formData.append("recipient_emails", JSON.stringify(payload.recipient_emails))
+        formData.append("cc_emails", JSON.stringify(payload.cc_emails))
+        formData.append("project_config", JSON.stringify(payload.project_config))
+        supportingFiles.forEach(file => formData.append("supporting_documents", file))
+
+        res = await fetch(`${API_BASE}/generate-wbs-with-documents`, {
+          method: "POST",
+          body: formData
+        })
+      } else {
+        res = await fetch(`${API_BASE}/generate-wbs`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        })
+      }
 
       const data = await res.json()
       currentJobId = data.job_id

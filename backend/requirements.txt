@@ -1,9 +1,11 @@
 fastapi
 uvicorn[standard]
+python-multipart
 python-dotenv
 pydantic-settings
 pydantic[email]
 mistralai
+PyMuPDF
 pandas
 openpyxl
 motor

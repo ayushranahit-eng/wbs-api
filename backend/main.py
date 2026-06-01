@@ -3,8 +3,10 @@ import json
 import uuid
 import os
 from datetime import datetime
+from typing import List, Optional
 
-from fastapi import FastAPI, BackgroundTasks, HTTPException
+import fitz
+from fastapi import FastAPI, BackgroundTasks, HTTPException, UploadFile, File, Form
 from fastapi.responses import StreamingResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -136,9 +138,7 @@ async def run_wbs_pipeline(job_id: str, req: WBSRequest):
 # ROUTES
 # ─────────────────────────────────────────────
 
-@app.post("/generate-wbs", response_model=JobResponse, tags=["WBS Pipeline"])
-async def generate_wbs(req: WBSRequest, background_tasks: BackgroundTasks):
-    """Submit a WBS generation job. Returns job_id immediately."""
+async def submit_wbs_job(req: WBSRequest, background_tasks: BackgroundTasks) -> JobResponse:
     job_id = str(uuid.uuid4())
     create_job(job_id)
     await queries.create_job(job_id, {
@@ -154,6 +154,83 @@ async def generate_wbs(req: WBSRequest, background_tasks: BackgroundTasks):
     })
     background_tasks.add_task(run_wbs_pipeline, job_id, req)
     return JobResponse(job_id=job_id, message="WBS generation started. Connect to /status/{job_id} for live updates.")
+
+
+async def extract_supporting_documents_text(files: Optional[List[UploadFile]]) -> str:
+    if not files:
+        return ""
+
+    chunks = []
+    for file in files:
+        filename = file.filename or "document"
+        content = await file.read()
+        if not content:
+            continue
+
+        lower_name = filename.lower()
+        if lower_name.endswith(".pdf") or file.content_type == "application/pdf":
+            try:
+                doc = fitz.open(stream=content, filetype="pdf")
+                text = "\n".join(page.get_text().strip() for page in doc)
+                doc.close()
+            except Exception as exc:
+                raise HTTPException(status_code=400, detail=f"Could not read PDF: {filename}") from exc
+        elif lower_name.endswith(".txt") or (file.content_type or "").startswith("text/"):
+            text = content.decode("utf-8", errors="ignore")
+        else:
+            continue
+
+        if text.strip():
+            chunks.append(f"SUPPORTING DOCUMENT - {filename}:\n{text.strip()}")
+
+    return "\n\n".join(chunks)
+
+
+@app.post("/generate-wbs", response_model=JobResponse, tags=["WBS Pipeline"])
+async def generate_wbs(req: WBSRequest, background_tasks: BackgroundTasks):
+    """Submit a WBS generation job. Returns job_id immediately."""
+    return await submit_wbs_job(req, background_tasks)
+
+
+@app.post("/generate-wbs-with-documents", response_model=JobResponse, tags=["WBS Pipeline"])
+async def generate_wbs_with_documents(
+    background_tasks: BackgroundTasks,
+    project_title: str = Form(...),
+    company_name: str = Form(...),
+    project_manager: str = Form(...),
+    team_size: int = Form(...),
+    project_start_date: str = Form(...),
+    rough_scope: str = Form(...),
+    project_config: str = Form(...),
+    recipient_emails: str = Form(...),
+    cc_emails: str = Form("[]"),
+    supporting_documents: Optional[List[UploadFile]] = File(None),
+):
+    """Submit a WBS job with optional supporting PDF/TXT documents."""
+    try:
+        project_config_data = json.loads(project_config)
+        recipient_email_data = json.loads(recipient_emails)
+        cc_email_data = json.loads(cc_emails)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=400, detail="Invalid JSON form payload") from exc
+
+    document_text = await extract_supporting_documents_text(supporting_documents)
+    combined_scope = rough_scope.strip()
+    if document_text:
+        combined_scope = f"{combined_scope}\n\nSUPPORTING DOCUMENTS:\n{document_text}"
+
+    req = WBSRequest(
+        project_title=project_title,
+        company_name=company_name,
+        project_manager=project_manager,
+        team_size=team_size,
+        project_start_date=project_start_date,
+        rough_scope=combined_scope,
+        project_config=project_config_data,
+        recipient_emails=recipient_email_data,
+        cc_emails=cc_email_data,
+    )
+    return await submit_wbs_job(req, background_tasks)
 
 
 @app.get("/status/{job_id}", tags=["WBS Pipeline"])
