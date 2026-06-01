@@ -25,7 +25,7 @@ class WBSRequest(BaseModel):
     project_start_date: str
     rough_scope: str
     project_config: ProjectConfig
-    recipient_emails: Optional[List[EmailStr]] = []
+    recipient_emails: List[EmailStr]
     cc_emails: Optional[List[EmailStr]] = []
 
 

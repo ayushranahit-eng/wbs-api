@@ -796,7 +796,7 @@
                 <input type="text" id="project_start_date" placeholder="e.g. 01-Jun-26" />
               </div>
               <div class="form-group">
-                <label>Recipients</label>
+                <label>Recipients <span style="color:#ea4335">*</span></label>
                 <div class="smart-list" id="recipient_list"></div>
                 <div class="smart-add" id="recipient_add">
                   <input type="email" id="new_recipient" placeholder="Enter email" />
@@ -1234,6 +1234,11 @@
 
       if (!payload.project_title || !payload.rough_scope) {
         alert("Please fill in Project Title and Project Scope.")
+        return
+      }
+
+      if (!payload.recipient_emails || payload.recipient_emails.length === 0) {
+        alert("Please add at least one Recipient email.")
         return
       }
 
