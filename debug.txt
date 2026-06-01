@@ -1,36 +1,29 @@
-0               <div class="form-group">
-1                 <label>Project Manager</label>
-2                 <select id="project_manager"><option value="">Select manager...</option></select>
-3                 <div class="inline-add">
-4                   <input type="text" id="new_manager" placeholder="Add new manager" />
-5                   <button class="btn-add" type="button" onclick="addManager()">+ Add</button>
-6                 </div>
-7               </div>
-8               <div class="form-group">
-9                 <label>Team Size</label>
-10                 <input type="number" id="team_size" placeholder="e.g. 5" min="1" />
-11               </div>
-12               <div class="form-group">
-13                 <label>Project Start Date</label>
-14                 <input type="text" id="project_start_date" placeholder="e.g. 01-Jun-26" />
-15               </div>
-16               <div class="form-group">
-17                 <label>Recipients</label>
-18                 <div class="multi-select" id="recipient_list"></div>
-19                 <div class="inline-add">
-20                   <input type="email" id="new_recipient" placeholder="Add email" />
-21                   <button class="btn-add" type="button" onclick="addEmail('recipient')">+ Add</button>
-22                 </div>
-23               </div>
-24               <div class="form-group">
-25                 <label>CC</label>
-26                 <div class="multi-select" id="cc_list"></div>
-27                 <div class="inline-add">
-28                   <input type="email" id="new_cc" placeholder="Add email" />
-29                   <button class="btn-add" type="button" onclick="addEmail('cc')">+ Add</button>
-30                 </div>
-31               </div>
-32               <div class="form-group full">
-33                 <label>Project Scope</label>
-34                 <textarea id="rough_scope" placeholder="Describe the project in your own words..."></textarea>
-35               </div>
+786                  <button class="btn-add" type="button" onclick="confirmAddManager()">Save</button>
+787                  <button class="btn-cancel" type="button" onclick="hideAdd('manager')">Cancel</button>
+803                  <button class="btn-add" type="button" onclick="confirmAddEmail('recipient')">Save</button>
+804                  <button class="btn-cancel" type="button" onclick="hideAdd('recipient')">Cancel</button>
+812                  <button class="btn-add" type="button" onclick="confirmAddEmail('cc')">Save</button>
+813                  <button class="btn-cancel" type="button" onclick="hideAdd('cc')">Cancel</button>
+985      renderManagerList()
+988    function renderManagerList() {
+994      addRow.onclick = () => showAdd("manager")
+1000        row.onclick = () => { selectedManager = name; renderManagerList() }
+1005    async function confirmAddManager() {
+1011      hideAdd("manager")
+1014      renderManagerList()
+1030      renderSmartList("recipient")
+1031      renderSmartList("cc")
+1034    function renderSmartList(type) {
+1041      addRow.onclick = () => showAdd(type)
+1047        row.innerHTML = `<span>${email}</span>` + (isSelected ? `<button class="remove-btn" onclick="event.stopPropagation();removeEmail('${type}','${email}')">&times;</button>` : "")
+1048        row.onclick = () => { if (!isSelected) { selected.push(email); renderSmartList(type) } }
+1053    async function confirmAddEmail(type) {
+1059      hideAdd(type)
+1064      renderSmartList(type)
+1067    function removeEmail(type, email) {
+1070      renderSmartList(type)
+1073    function showAdd(type) {
+1077    function hideAdd(type) {
+1151      renderManagerList()
+1152      renderSmartList("recipient")
+1153      renderSmartList("cc")

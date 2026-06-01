@@ -276,14 +276,84 @@
       color: #ea4335;
     }
 
-    .smart-add {
-      display: none;
-      gap: 8px;
-      margin-top: 8px;
+    .smart-list.collapsible {
+      position: relative;
+      overflow: visible;
+      z-index: 1;
     }
 
-    .smart-add input {
+    .smart-list.collapsible.open {
+      z-index: 20;
+    }
+
+    .smart-list.collapsible .smart-summary {
+      border-bottom: none;
+      min-height: 40px;
+    }
+
+    .smart-summary-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .smart-summary-title {
+      color: #3c4043;
+      font-weight: 600;
+    }
+
+    .smart-summary-value {
+      color: #5f6368;
+      font-size: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 100%;
+    }
+
+    .smart-chevron {
+      color: #5f6368;
+      font-size: 14px;
+      margin-left: 12px;
+      transition: transform 0.2s;
+    }
+
+    .smart-list.collapsible.open .smart-chevron {
+      transform: rotate(180deg);
+    }
+
+    .smart-options {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      z-index: 30;
+      background: #fff;
+      border: 1px solid #dadce0;
+      border-radius: 8px;
+      box-shadow: 0 8px 20px rgba(60, 64, 67, 0.18);
+      max-height: 220px;
+      overflow-y: auto;
+    }
+
+    .smart-inline-add {
+      display: flex;
+      gap: 8px;
+      padding: 10px;
+      border-bottom: 1px solid #f1f3f4;
+      background: #fff;
+      cursor: default;
+    }
+
+    .smart-inline-add:hover {
+      background: #fff;
+    }
+
+    .smart-inline-add input {
       flex: 1;
+      min-width: 0;
+      padding: 8px 10px;
     }
 
     .btn-add {
@@ -781,11 +851,6 @@
               <div class="form-group">
                 <label>Project Manager</label>
                 <div class="smart-list" id="manager_list"></div>
-                <div class="smart-add" id="manager_add">
-                  <input type="text" id="new_manager" placeholder="Enter manager name" />
-                  <button class="btn-add" type="button" onclick="confirmAddManager()">Save</button>
-                  <button class="btn-cancel" type="button" onclick="hideAdd('manager')">Cancel</button>
-                </div>
               </div>
               <div class="form-group">
                 <label>Team Size</label>
@@ -793,25 +858,15 @@
               </div>
               <div class="form-group">
                 <label>Project Start Date</label>
-                <input type="text" id="project_start_date" placeholder="e.g. 01-Jun-26" />
+                <input type="date" id="project_start_date" />
               </div>
               <div class="form-group">
                 <label>Recipients <span style="color:#ea4335">*</span></label>
                 <div class="smart-list" id="recipient_list"></div>
-                <div class="smart-add" id="recipient_add">
-                  <input type="email" id="new_recipient" placeholder="Enter email" />
-                  <button class="btn-add" type="button" onclick="confirmAddEmail('recipient')">Save</button>
-                  <button class="btn-cancel" type="button" onclick="hideAdd('recipient')">Cancel</button>
-                </div>
               </div>
               <div class="form-group">
                 <label>CC</label>
                 <div class="smart-list" id="cc_list"></div>
-                <div class="smart-add" id="cc_add">
-                  <input type="email" id="new_cc" placeholder="Enter email" />
-                  <button class="btn-add" type="button" onclick="confirmAddEmail('cc')">Save</button>
-                  <button class="btn-cancel" type="button" onclick="hideAdd('cc')">Cancel</button>
-                </div>
               </div>
               <div class="form-group full">
                 <label>Project Scope</label>
@@ -975,6 +1030,8 @@
     // -- MANAGERS --
     let selectedManager = ""
     let allManagers = []
+    let managerListOpen = false
+    let managerAdding = false
 
     async function loadManagers() {
       document.getElementById("manager_list").innerHTML = '<div class="smart-item"><span style="color:#9aa0a6">Loading...</span></div>'
@@ -987,30 +1044,78 @@
 
     function renderManagerList() {
       const container = document.getElementById("manager_list")
+      const summary = selectedManager || "No manager selected"
       container.innerHTML = ""
-      const addRow = document.createElement("div")
-      addRow.className = "smart-item add-row"
-      addRow.textContent = "+ Add Manager"
-      addRow.onclick = () => showAdd("manager")
-      container.appendChild(addRow)
+      container.className = `smart-list collapsible${managerListOpen ? " open" : ""}`
+      container.onclick = (event) => event.stopPropagation()
+
+      const summaryRow = document.createElement("div")
+      summaryRow.className = "smart-item smart-summary"
+      summaryRow.innerHTML = `
+        <div class="smart-summary-text">
+          <span class="smart-summary-title">Select manager</span>
+          <span class="smart-summary-value">${summary}</span>
+        </div>
+        <span class="smart-chevron">v</span>
+      `
+      summaryRow.onclick = () => {
+        const shouldOpen = !managerListOpen
+        closeOtherSmartLists("manager")
+        managerListOpen = shouldOpen
+        managerAdding = false
+        renderManagerList()
+      }
+      container.appendChild(summaryRow)
+
+      if (!managerListOpen) return
+
+      const options = document.createElement("div")
+      options.className = "smart-options"
+
+      if (managerAdding) {
+        const addBox = document.createElement("div")
+        addBox.className = "smart-inline-add"
+        addBox.innerHTML = `
+          <input type="text" id="new_manager_inline" placeholder="Enter manager name" />
+          <button class="btn-add" type="button">Save</button>
+          <button class="btn-cancel" type="button">Back</button>
+        `
+        addBox.querySelector(".btn-add").onclick = () => confirmAddManager()
+        addBox.querySelector(".btn-cancel").onclick = () => hideAdd("manager")
+        options.appendChild(addBox)
+        setTimeout(() => document.getElementById("new_manager_inline")?.focus(), 0)
+      } else {
+        const addRow = document.createElement("div")
+        addRow.className = "smart-item add-row"
+        addRow.textContent = "+ Add Manager"
+        addRow.onclick = () => showAdd("manager")
+        options.appendChild(addRow)
+      }
+
       allManagers.forEach(name => {
         const row = document.createElement("div")
         row.className = "smart-item" + (selectedManager === name ? " selected" : "")
         row.innerHTML = `<span>${name}</span>`
-        row.onclick = () => { selectedManager = name; renderManagerList() }
-        container.appendChild(row)
+        row.onclick = () => {
+          selectedManager = name
+          managerListOpen = false
+          renderManagerList()
+        }
+        options.appendChild(row)
       })
+      container.appendChild(options)
     }
 
     async function confirmAddManager() {
-      const input = document.getElementById("new_manager")
+      const input = document.getElementById("new_manager_inline")
       const name = input.value.trim()
       if (!name) return
       await fetch(`${API_BASE}/managers`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }) })
-      input.value = ""
       hideAdd("manager")
       await loadManagers()
       selectedManager = name
+      managerListOpen = false
+      managerAdding = false
       renderManagerList()
     }
 
@@ -1018,6 +1123,8 @@
     let selectedRecipients = []
     let selectedCC = []
     let allEmails = []
+    let emailListOpen = { recipient: false, cc: false }
+    let emailAdding = { recipient: false, cc: false }
 
     async function loadEmails() {
       const loadingHtml = '<div class="smart-item"><span style="color:#9aa0a6">Loading...</span></div>'
@@ -1034,33 +1141,78 @@
     function renderSmartList(type) {
       const selected = type === "recipient" ? selectedRecipients : selectedCC
       const container = document.getElementById(`${type}_list`)
+      const isOpen = emailListOpen[type]
+      const label = type === "recipient" ? "Select recipients" : "Select CC emails"
+      const summary = selected.length ? selected.join(", ") : "No emails selected"
       container.innerHTML = ""
-      const addRow = document.createElement("div")
-      addRow.className = "smart-item add-row"
-      addRow.textContent = "+ Add Email"
-      addRow.onclick = () => showAdd(type)
-      container.appendChild(addRow)
+      container.className = `smart-list collapsible${isOpen ? " open" : ""}`
+      container.onclick = (event) => event.stopPropagation()
+
+      const summaryRow = document.createElement("div")
+      summaryRow.className = "smart-item smart-summary"
+      summaryRow.innerHTML = `
+        <div class="smart-summary-text">
+          <span class="smart-summary-title">${label}</span>
+          <span class="smart-summary-value">${summary}</span>
+        </div>
+        <span class="smart-chevron">v</span>
+      `
+      summaryRow.onclick = () => {
+        const shouldOpen = !emailListOpen[type]
+        closeOtherSmartLists(type)
+        emailListOpen[type] = shouldOpen
+        emailAdding[type] = false
+        renderSmartList(type)
+      }
+      container.appendChild(summaryRow)
+
+      if (!isOpen) return
+
+      const options = document.createElement("div")
+      options.className = "smart-options"
+
+      if (emailAdding[type]) {
+        const addBox = document.createElement("div")
+        addBox.className = "smart-inline-add"
+        addBox.innerHTML = `
+          <input type="email" id="new_${type}_inline" placeholder="Enter email" />
+          <button class="btn-add" type="button">Save</button>
+          <button class="btn-cancel" type="button">Back</button>
+        `
+        addBox.querySelector(".btn-add").onclick = () => confirmAddEmail(type)
+        addBox.querySelector(".btn-cancel").onclick = () => hideAdd(type)
+        options.appendChild(addBox)
+        setTimeout(() => document.getElementById(`new_${type}_inline`)?.focus(), 0)
+      } else {
+        const addRow = document.createElement("div")
+        addRow.className = "smart-item add-row"
+        addRow.textContent = "+ Add Email"
+        addRow.onclick = () => showAdd(type)
+        options.appendChild(addRow)
+      }
+
       allEmails.forEach(email => {
         const isSelected = selected.includes(email)
         const row = document.createElement("div")
         row.className = "smart-item" + (isSelected ? " selected" : "")
         row.innerHTML = `<span>${email}</span>` + (isSelected ? `<button class="remove-btn" onclick="event.stopPropagation();removeEmail('${type}','${email}')">&times;</button>` : "")
         row.onclick = () => { if (!isSelected) { selected.push(email); renderSmartList(type) } }
-        container.appendChild(row)
+        options.appendChild(row)
       })
+      container.appendChild(options)
     }
 
     async function confirmAddEmail(type) {
-      const input = document.getElementById(`new_${type}`)
+      const input = document.getElementById(`new_${type}_inline`)
       const email = input.value.trim()
       if (!email) return
       await fetch(`${API_BASE}/emails`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email }) })
-      input.value = ""
       hideAdd(type)
       const res = await fetch(`${API_BASE}/emails`)
       allEmails = await res.json()
       const selected = type === "recipient" ? selectedRecipients : selectedCC
       if (!selected.includes(email)) selected.push(email)
+      emailAdding[type] = false
       renderSmartList(type)
     }
 
@@ -1071,12 +1223,58 @@
     }
 
     function showAdd(type) {
-      document.getElementById(`${type}_add`).style.display = "flex"
+      if (type === "manager") {
+        closeOtherSmartLists("manager")
+        managerListOpen = true
+        managerAdding = true
+        renderManagerList()
+      } else if (type === "recipient" || type === "cc") {
+        closeOtherSmartLists(type)
+        emailListOpen[type] = true
+        emailAdding[type] = true
+        renderSmartList(type)
+      }
     }
 
     function hideAdd(type) {
-      document.getElementById(`${type}_add`).style.display = "none"
+      if (type === "manager") {
+        managerAdding = false
+        renderManagerList()
+      } else if (type === "recipient" || type === "cc") {
+        emailAdding[type] = false
+        renderSmartList(type)
+      }
     }
+
+    function closeOtherSmartLists(activeType) {
+      if (activeType !== "manager") {
+        managerListOpen = false
+        managerAdding = false
+        renderManagerList()
+      }
+      if (activeType !== "recipient") {
+        emailListOpen.recipient = false
+        emailAdding.recipient = false
+        renderSmartList("recipient")
+      }
+      if (activeType !== "cc") {
+        emailListOpen.cc = false
+        emailAdding.cc = false
+        renderSmartList("cc")
+      }
+    }
+
+    function closeSmartLists() {
+      managerListOpen = false
+      managerAdding = false
+      emailListOpen = { recipient: false, cc: false }
+      emailAdding = { recipient: false, cc: false }
+      renderManagerList()
+      renderSmartList("recipient")
+      renderSmartList("cc")
+    }
+
+    document.addEventListener("click", closeSmartLists)
 
     loadManagers()
     loadEmails()
@@ -1100,6 +1298,24 @@
       document.getElementById("home-page").style.display = page === "home" ? "block" : "none"
       document.getElementById("jobs-page").style.display = page === "jobs" ? "block" : "none"
       if (page === "jobs") loadJobs()
+    }
+
+    function toDateInputValue(value) {
+      if (!value) return ""
+      if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value
+
+      const match = String(value).match(/^(\d{1,2})-([A-Za-z]{3})-(\d{2}|\d{4})$/)
+      if (!match) return ""
+
+      const months = {
+        jan: "01", feb: "02", mar: "03", apr: "04", may: "05", jun: "06",
+        jul: "07", aug: "08", sep: "09", oct: "10", nov: "11", dec: "12",
+      }
+      const day = match[1].padStart(2, "0")
+      const month = months[match[2].toLowerCase()]
+      const year = match[3].length === 2 ? `20${match[3]}` : match[3]
+
+      return month ? `${year}-${month}-${day}` : ""
     }
 
     async function loadJobs() {
@@ -1144,7 +1360,7 @@
       document.getElementById("company_name").value = job.company_name || ""
       selectedManager = job.project_manager || ""
       document.getElementById("team_size").value = job.team_size || ""
-      document.getElementById("project_start_date").value = job.project_start_date || ""
+      document.getElementById("project_start_date").value = toDateInputValue(job.project_start_date)
       document.getElementById("rough_scope").value = job.rough_scope || ""
       selectedRecipients = job.recipient_emails || []
       selectedCC = job.cc_emails || []
