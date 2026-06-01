@@ -979,7 +979,7 @@
     async function loadManagers() {
       document.getElementById("manager_list").innerHTML = '<div class="smart-item"><span style="color:#9aa0a6">Loading...</span></div>'
       try {
-        const res = await fetch(`${API_BASE}/managers`)
+        const res = await fetch(`${API_BASE}/managers`, { signal: AbortSignal.timeout(15000) })
         allManagers = await res.json()
       } catch (e) { allManagers = [] }
       renderManagerList()
@@ -1024,7 +1024,7 @@
       document.getElementById("recipient_list").innerHTML = loadingHtml
       document.getElementById("cc_list").innerHTML = loadingHtml
       try {
-        const res = await fetch(`${API_BASE}/emails`)
+        const res = await fetch(`${API_BASE}/emails`, { signal: AbortSignal.timeout(15000) })
         allEmails = await res.json()
       } catch (e) { allEmails = [] }
       renderSmartList("recipient")
