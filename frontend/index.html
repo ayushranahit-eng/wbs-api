@@ -1119,7 +1119,7 @@
             .map(([k]) => `<span class="config-tag">${CONFIG_LABELS[k] || k}</span>`)
             .join("")
           const statusClass = { done: "badge-done", running: "badge-running", failed: "badge-failed", pending: "badge-pending" }[job.status] || "badge-pending"
-          const created = job.created_at ? new Date(job.created_at).toLocaleString() : "-"
+          const created = job.created_at ? new Date(job.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : "-"
           return `
           <tr>
             <td><strong>${job.project_title || "-"}</strong></td>
