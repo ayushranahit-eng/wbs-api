@@ -803,6 +803,53 @@
       background: #1557b0;
     }
 
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      padding-top: 16px;
+      flex-wrap: wrap;
+    }
+
+    .pagination-info {
+      color: #5f6368;
+      font-size: 13px;
+      margin-right: auto;
+    }
+
+    .page-btn {
+      background: #fff;
+      border: 1px solid #dadce0;
+      color: #3c4043;
+      min-width: 34px;
+      height: 34px;
+      padding: 0 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s, color 0.2s;
+    }
+
+    .page-btn:hover:not(:disabled) {
+      background: #e8f0fe;
+      border-color: #1a73e8;
+      color: #1a73e8;
+    }
+
+    .page-btn.active {
+      background: #1a73e8;
+      border-color: #1a73e8;
+      color: #fff;
+    }
+
+    .page-btn:disabled {
+      color: #9aa0a6;
+      cursor: not-allowed;
+      background: #f8f9fa;
+    }
+
     .no-jobs {
       text-align: center;
       padding: 48px;
@@ -826,7 +873,7 @@
 
   <nav>
     <div class="logo">WBS <span>AI System</span></div>
-    <button class="nav-btn" onclick="showPage('jobs')">Recent Jobs</button>
+    <button class="nav-btn" onclick="showPage('jobs')">View History</button>
   </nav>
 
   <div class="main-wrap">
@@ -985,8 +1032,8 @@
       <div id="jobs-page" style="display:none;">
         <div class="jobs-header">
           <div>
-            <div class="page-title">Recent Jobs</div>
-            <div class="page-subtitle">Last 50 WBS generation jobs</div>
+            <div class="page-title">View History</div>
+            <div class="page-subtitle">Showing 10 recent projects per page</div>
           </div>
           <button class="btn-back" onclick="showPage('home')">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1018,6 +1065,7 @@
               </tbody>
             </table>
           </div>
+          <div class="pagination" id="jobs-pagination"></div>
         </div>
       </div><!-- end jobs-page -->
 
@@ -1294,6 +1342,10 @@
       free_support_45: "Support 45 Days",
     }
 
+    const JOBS_PAGE_SIZE = 10
+    let allJobs = []
+    let jobsCurrentPage = 1
+
     function showPage(page) {
       document.getElementById("home-page").style.display = page === "home" ? "block" : "none"
       document.getElementById("jobs-page").style.display = page === "jobs" ? "block" : "none"
@@ -1320,23 +1372,44 @@
 
     async function loadJobs() {
       const tbody = document.getElementById("jobs-tbody")
+      const pagination = document.getElementById("jobs-pagination")
       tbody.innerHTML = `<tr><td colspan="9" class="no-jobs">Loading...</td></tr>`
+      pagination.innerHTML = ""
       try {
         const res = await fetch(`${API_BASE}/jobs`)
-        const jobs = await res.json()
-        if (!jobs.length) {
+        allJobs = await res.json()
+        jobsCurrentPage = 1
+        renderJobsPage()
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="9" class="no-jobs">Failed to load jobs.</td></tr>`
+        pagination.innerHTML = ""
+      }
+    }
+
+    function renderJobsPage() {
+      const tbody = document.getElementById("jobs-tbody")
+      const pagination = document.getElementById("jobs-pagination")
+
+      if (!allJobs.length) {
           tbody.innerHTML = `<tr><td colspan="9" class="no-jobs">No jobs found.</td></tr>`
-          return
-        }
-        tbody.innerHTML = jobs.map(job => {
-          const cfg = job.project_config || {}
-          const tags = Object.entries(cfg)
-            .filter(([, v]) => v === "Y")
-            .map(([k]) => `<span class="config-tag">${CONFIG_LABELS[k] || k}</span>`)
-            .join("")
-          const statusClass = { done: "badge-done", running: "badge-running", failed: "badge-failed", pending: "badge-pending" }[job.status] || "badge-pending"
-          const created = job.created_at ? new Date(job.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : "-"
-          return `
+        pagination.innerHTML = ""
+        return
+      }
+
+      const totalPages = Math.ceil(allJobs.length / JOBS_PAGE_SIZE)
+      jobsCurrentPage = Math.min(Math.max(jobsCurrentPage, 1), totalPages)
+      const startIndex = (jobsCurrentPage - 1) * JOBS_PAGE_SIZE
+      const visibleJobs = allJobs.slice(startIndex, startIndex + JOBS_PAGE_SIZE)
+
+      tbody.innerHTML = visibleJobs.map(job => {
+        const cfg = job.project_config || {}
+        const tags = Object.entries(cfg)
+          .filter(([, v]) => v === "Y")
+          .map(([k]) => `<span class="config-tag">${CONFIG_LABELS[k] || k}</span>`)
+          .join("")
+        const statusClass = { done: "badge-done", running: "badge-running", failed: "badge-failed", pending: "badge-pending" }[job.status] || "badge-pending"
+        const created = job.created_at ? new Date(job.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : "-"
+        return `
           <tr>
             <td><strong>${job.project_title || "-"}</strong></td>
             <td>${job.company_name || "-"}</td>
@@ -1348,10 +1421,26 @@
             <td>${created}</td>
             <td><button class="btn-regen" onclick='regenJob(${JSON.stringify(job)})'>Regenerate</button></td>
           </tr>`
-        }).join("")
-      } catch (e) {
-        tbody.innerHTML = `<tr><td colspan="9" class="no-jobs">Failed to load jobs.</td></tr>`
-      }
+      }).join("")
+
+      const from = startIndex + 1
+      const to = Math.min(startIndex + JOBS_PAGE_SIZE, allJobs.length)
+      const pageButtons = Array.from({ length: totalPages }, (_, index) => {
+        const page = index + 1
+        return `<button class="page-btn ${page === jobsCurrentPage ? "active" : ""}" type="button" onclick="goToJobsPage(${page})">${page}</button>`
+      }).join("")
+
+      pagination.innerHTML = `
+        <span class="pagination-info">Showing ${from}-${to} of ${allJobs.length}</span>
+        <button class="page-btn" type="button" onclick="goToJobsPage(${jobsCurrentPage - 1})" ${jobsCurrentPage === 1 ? "disabled" : ""}>Prev</button>
+        ${pageButtons}
+        <button class="page-btn" type="button" onclick="goToJobsPage(${jobsCurrentPage + 1})" ${jobsCurrentPage === totalPages ? "disabled" : ""}>Next</button>
+      `
+    }
+
+    function goToJobsPage(page) {
+      jobsCurrentPage = page
+      renderJobsPage()
     }
 
     function regenJob(job) {
