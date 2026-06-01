@@ -5,8 +5,9 @@ import os
 from datetime import datetime
 
 from fastapi import FastAPI, BackgroundTasks, HTTPException
-from fastapi.responses import StreamingResponse, FileResponse
+from fastapi.responses import StreamingResponse, FileResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from models.schemas import (
     WBSRequest, JobResponse,
@@ -269,6 +270,15 @@ async def list_jobs():
     """Get all recent jobs from MongoDB."""
     jobs = await queries.list_jobs()
     return jobs
+
+
+@app.get("/", response_class=HTMLResponse, tags=["System"])
+async def serve_frontend():
+    frontend_path = os.path.join(os.path.dirname(__file__), "..", "frontend", "index.html")
+    with open(frontend_path, encoding="utf-8") as f:
+        html = f.read()
+    html = html.replace("__API_BASE_URL__", settings.API_BASE_URL)
+    return HTMLResponse(content=html)
 
 
 @app.get("/config", tags=["System"])
