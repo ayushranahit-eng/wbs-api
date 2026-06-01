@@ -30,7 +30,8 @@ async def update_job_status(job_id: str, status: str, error: str = None):
 
 
 async def get_job(job_id: str):
-    return await get_db().wbs_jobs.find_one({"_id": job_id})
+    job = await get_db().wbs_jobs.find_one({"_id": job_id})
+    return job
 
 
 async def list_jobs():
@@ -43,3 +44,37 @@ async def list_jobs():
         if job.get("completed_at"):
             job["completed_at"] = job["completed_at"].isoformat()
     return jobs
+
+
+# ── Managers ──
+
+async def get_managers():
+    cursor = get_db().wbs_managers.find().sort("name", 1)
+    return [doc["name"] for doc in await cursor.to_list(length=200)]
+
+
+async def add_manager(name: str):
+    existing = await get_db().wbs_managers.find_one({"name": name})
+    if not existing:
+        await get_db().wbs_managers.insert_one({"name": name})
+
+
+async def delete_manager(name: str):
+    await get_db().wbs_managers.delete_one({"name": name})
+
+
+# ── Emails ──
+
+async def get_emails():
+    cursor = get_db().wbs_emails.find().sort("email", 1)
+    return [doc["email"] for doc in await cursor.to_list(length=200)]
+
+
+async def add_email(email: str):
+    existing = await get_db().wbs_emails.find_one({"email": email})
+    if not existing:
+        await get_db().wbs_emails.insert_one({"email": email})
+
+
+async def delete_email(email: str):
+    await get_db().wbs_emails.delete_one({"email": email})

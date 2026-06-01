@@ -219,6 +219,106 @@
       transform: translateX(16px);
     }
 
+    /* SMART LIST */
+    .smart-list {
+      border: 1px solid #dadce0;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .smart-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 14px;
+      font-size: 13px;
+      color: #3c4043;
+      border-bottom: 1px solid #f1f3f4;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .smart-item:last-child {
+      border-bottom: none;
+    }
+
+    .smart-item:hover {
+      background: #f8f9fa;
+    }
+
+    .smart-item.add-row {
+      color: #1a73e8;
+      font-weight: 600;
+    }
+
+    .smart-item.add-row:hover {
+      background: #e8f0fe;
+    }
+
+    .smart-item.selected {
+      background: #e8f0fe;
+      color: #1a73e8;
+      font-weight: 500;
+    }
+
+    .smart-item .remove-btn {
+      background: none;
+      border: none;
+      color: #9aa0a6;
+      cursor: pointer;
+      font-size: 16px;
+      padding: 0;
+      line-height: 1;
+    }
+
+    .smart-item .remove-btn:hover {
+      color: #ea4335;
+    }
+
+    .smart-add {
+      display: none;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .smart-add input {
+      flex: 1;
+    }
+
+    .btn-add {
+      background: #1a73e8;
+      color: #fff;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s;
+    }
+
+    .btn-add:hover {
+      background: #1557b0;
+    }
+
+    .btn-cancel {
+      background: none;
+      border: 1px solid #dadce0;
+      color: #5f6368;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-cancel:hover {
+      background: #f1f3f4;
+    }
+
     /* SUBMIT */
     .btn-primary {
       background: #1a73e8;
@@ -680,7 +780,12 @@
               </div>
               <div class="form-group">
                 <label>Project Manager</label>
-                <input type="text" id="project_manager" placeholder="e.g. Mr. Ayush Rana" />
+                <div class="smart-list" id="manager_list"></div>
+                <div class="smart-add" id="manager_add">
+                  <input type="text" id="new_manager" placeholder="Enter manager name" />
+                  <button class="btn-add" type="button" onclick="confirmAddManager()">Save</button>
+                  <button class="btn-cancel" type="button" onclick="hideAdd('manager')">Cancel</button>
+                </div>
               </div>
               <div class="form-group">
                 <label>Team Size</label>
@@ -691,8 +796,22 @@
                 <input type="text" id="project_start_date" placeholder="e.g. 01-Jun-26" />
               </div>
               <div class="form-group">
-                <label>Recipient Email (optional)</label>
-                <input type="email" id="recipient_email" placeholder="e.g. client@company.com" />
+                <label>Recipients</label>
+                <div class="smart-list" id="recipient_list"></div>
+                <div class="smart-add" id="recipient_add">
+                  <input type="email" id="new_recipient" placeholder="Enter email" />
+                  <button class="btn-add" type="button" onclick="confirmAddEmail('recipient')">Save</button>
+                  <button class="btn-cancel" type="button" onclick="hideAdd('recipient')">Cancel</button>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>CC</label>
+                <div class="smart-list" id="cc_list"></div>
+                <div class="smart-add" id="cc_add">
+                  <input type="email" id="new_cc" placeholder="Enter email" />
+                  <button class="btn-add" type="button" onclick="confirmAddEmail('cc')">Save</button>
+                  <button class="btn-cancel" type="button" onclick="hideAdd('cc')">Cancel</button>
+                </div>
               </div>
               <div class="form-group full">
                 <label>Project Scope</label>
@@ -851,7 +970,116 @@
   </div><!-- end main-wrap -->
 
   <script>
-    const API_BASE = "https://wbs-api-production-4d02.up.railway.app"
+    const API_BASE = "http://127.0.0.1:8000"
+
+    // -- MANAGERS --
+    let selectedManager = ""
+    let allManagers = []
+
+    async function loadManagers() {
+      document.getElementById("manager_list").innerHTML = '<div class="smart-item"><span style="color:#9aa0a6">Loading...</span></div>'
+      try {
+        const res = await fetch(`${API_BASE}/managers`)
+        allManagers = await res.json()
+      } catch (e) { allManagers = [] }
+      renderManagerList()
+    }
+
+    function renderManagerList() {
+      const container = document.getElementById("manager_list")
+      container.innerHTML = ""
+      const addRow = document.createElement("div")
+      addRow.className = "smart-item add-row"
+      addRow.textContent = "+ Add Manager"
+      addRow.onclick = () => showAdd("manager")
+      container.appendChild(addRow)
+      allManagers.forEach(name => {
+        const row = document.createElement("div")
+        row.className = "smart-item" + (selectedManager === name ? " selected" : "")
+        row.innerHTML = `<span>${name}</span>`
+        row.onclick = () => { selectedManager = name; renderManagerList() }
+        container.appendChild(row)
+      })
+    }
+
+    async function confirmAddManager() {
+      const input = document.getElementById("new_manager")
+      const name = input.value.trim()
+      if (!name) return
+      await fetch(`${API_BASE}/managers`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }) })
+      input.value = ""
+      hideAdd("manager")
+      await loadManagers()
+      selectedManager = name
+      renderManagerList()
+    }
+
+    // -- EMAILS --
+    let selectedRecipients = []
+    let selectedCC = []
+    let allEmails = []
+
+    async function loadEmails() {
+      const loadingHtml = '<div class="smart-item"><span style="color:#9aa0a6">Loading...</span></div>'
+      document.getElementById("recipient_list").innerHTML = loadingHtml
+      document.getElementById("cc_list").innerHTML = loadingHtml
+      try {
+        const res = await fetch(`${API_BASE}/emails`)
+        allEmails = await res.json()
+      } catch (e) { allEmails = [] }
+      renderSmartList("recipient")
+      renderSmartList("cc")
+    }
+
+    function renderSmartList(type) {
+      const selected = type === "recipient" ? selectedRecipients : selectedCC
+      const container = document.getElementById(`${type}_list`)
+      container.innerHTML = ""
+      const addRow = document.createElement("div")
+      addRow.className = "smart-item add-row"
+      addRow.textContent = "+ Add Email"
+      addRow.onclick = () => showAdd(type)
+      container.appendChild(addRow)
+      allEmails.forEach(email => {
+        const isSelected = selected.includes(email)
+        const row = document.createElement("div")
+        row.className = "smart-item" + (isSelected ? " selected" : "")
+        row.innerHTML = `<span>${email}</span>` + (isSelected ? `<button class="remove-btn" onclick="event.stopPropagation();removeEmail('${type}','${email}')">&times;</button>` : "")
+        row.onclick = () => { if (!isSelected) { selected.push(email); renderSmartList(type) } }
+        container.appendChild(row)
+      })
+    }
+
+    async function confirmAddEmail(type) {
+      const input = document.getElementById(`new_${type}`)
+      const email = input.value.trim()
+      if (!email) return
+      await fetch(`${API_BASE}/emails`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email }) })
+      input.value = ""
+      hideAdd(type)
+      const res = await fetch(`${API_BASE}/emails`)
+      allEmails = await res.json()
+      const selected = type === "recipient" ? selectedRecipients : selectedCC
+      if (!selected.includes(email)) selected.push(email)
+      renderSmartList(type)
+    }
+
+    function removeEmail(type, email) {
+      if (type === "recipient") selectedRecipients = selectedRecipients.filter(e => e !== email)
+      else selectedCC = selectedCC.filter(e => e !== email)
+      renderSmartList(type)
+    }
+
+    function showAdd(type) {
+      document.getElementById(`${type}_add`).style.display = "flex"
+    }
+
+    function hideAdd(type) {
+      document.getElementById(`${type}_add`).style.display = "none"
+    }
+
+    loadManagers()
+    loadEmails()
 
     const CONFIG_LABELS = {
       business_analysis: "Business Analysis",
@@ -914,11 +1142,15 @@
       showPage("home")
       document.getElementById("project_title").value = job.project_title || ""
       document.getElementById("company_name").value = job.company_name || ""
-      document.getElementById("project_manager").value = job.project_manager || ""
+      selectedManager = job.project_manager || ""
       document.getElementById("team_size").value = job.team_size || ""
       document.getElementById("project_start_date").value = job.project_start_date || ""
       document.getElementById("rough_scope").value = job.rough_scope || ""
-      document.getElementById("recipient_email").value = job.recipient_email || ""
+      selectedRecipients = job.recipient_emails || []
+      selectedCC = job.cc_emails || []
+      renderManagerList()
+      renderSmartList("recipient")
+      renderSmartList("cc")
       const cfg = job.project_config || {}
       Object.keys(cfg).forEach(key => {
         const el = document.getElementById(key)
@@ -978,11 +1210,12 @@
       const payload = {
         project_title: document.getElementById("project_title").value.trim(),
         company_name: document.getElementById("company_name").value.trim(),
-        project_manager: document.getElementById("project_manager").value.trim(),
+        project_manager: selectedManager,
         team_size: parseInt(document.getElementById("team_size").value),
         project_start_date: document.getElementById("project_start_date").value.trim(),
         rough_scope: document.getElementById("rough_scope").value.trim(),
-        recipient_email: document.getElementById("recipient_email").value.trim() || null,
+        recipient_emails: selectedRecipients,
+        cc_emails: selectedCC,
         project_config: {
           business_analysis: yn(document.getElementById("business_analysis").checked),
           ui_ux: yn(document.getElementById("ui_ux").checked),

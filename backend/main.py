@@ -111,16 +111,17 @@ async def run_wbs_pipeline(job_id: str, req: WBSRequest):
         await push_event(job_id, {"step": 5, "agent": "Excel Builder", "status": "done"})
 
         # EMAIL
-        if req.recipient_email:
-            await push_event(job_id, {"step": 6, "agent": "Email Service", "status": "running", "recipient": str(req.recipient_email)})
+        if req.recipient_emails:
+            await push_event(job_id, {"step": 6, "agent": "Email Service", "status": "running", "recipient": ", ".join(req.recipient_emails)})
             await asyncio.to_thread(
                 send_wbs_email,
-                req.recipient_email,
+                [str(e) for e in req.recipient_emails],
+                [str(e) for e in req.cc_emails],
                 req.project_title,
                 full_path,
                 sales_path,
             )
-            await push_event(job_id, {"step": 6, "agent": "Email Service", "status": "done", "recipient": str(req.recipient_email)})
+            await push_event(job_id, {"step": 6, "agent": "Email Service", "status": "done", "recipient": ", ".join(req.recipient_emails)})
 
         await queries.update_job_status(job_id, "done")
         await push_done(job_id, {"full_wbs_local": full_path, "sales_wbs_local": sales_path})
@@ -148,7 +149,8 @@ async def generate_wbs(req: WBSRequest, background_tasks: BackgroundTasks):
         "project_start_date": req.project_start_date,
         "rough_scope": req.rough_scope,
         "project_config": req.project_config.model_dump(),
-        "recipient_email": str(req.recipient_email) if req.recipient_email else None,
+        "recipient_emails": [str(e) for e in req.recipient_emails],
+        "cc_emails": [str(e) for e in req.cc_emails],
     })
     background_tasks.add_task(run_wbs_pipeline, job_id, req)
     return JobResponse(job_id=job_id, message="WBS generation started. Connect to /status/{job_id} for live updates.")
@@ -262,6 +264,42 @@ async def agent_tasks(req: TaskRequest):
         for t in task_json.get("tasks", []):
             previous_context += f"  Module: {t.get('module_name')} | Task: {t.get('task_title')}\n"
     return {"phases_tasks": all_tasks}
+
+
+@app.get("/managers", tags=["Settings"])
+async def get_managers():
+    return await queries.get_managers()
+
+@app.post("/managers", tags=["Settings"])
+async def add_manager(payload: dict):
+    name = payload.get("name", "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Name is required")
+    await queries.add_manager(name)
+    return {"message": "Manager added"}
+
+@app.delete("/managers/{name}", tags=["Settings"])
+async def delete_manager(name: str):
+    await queries.delete_manager(name)
+    return {"message": "Manager deleted"}
+
+
+@app.get("/emails", tags=["Settings"])
+async def get_emails():
+    return await queries.get_emails()
+
+@app.post("/emails", tags=["Settings"])
+async def add_email(payload: dict):
+    email = payload.get("email", "").strip()
+    if not email:
+        raise HTTPException(status_code=400, detail="Email is required")
+    await queries.add_email(email)
+    return {"message": "Email added"}
+
+@app.delete("/emails/{email}", tags=["Settings"])
+async def delete_email(email: str):
+    await queries.delete_email(email)
+    return {"message": "Email deleted"}
 
 
 @app.get("/jobs", tags=["WBS Pipeline"])

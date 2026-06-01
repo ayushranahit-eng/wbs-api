@@ -24,12 +24,20 @@ def _get_gmail_service():
     return build("gmail", "v1", credentials=creds)
 
 
-def send_wbs_email(recipient: str, project_title: str, full_wbs_path: str, sales_wbs_path: str):
+def send_wbs_email(
+    recipients: list,
+    cc: list,
+    project_title: str,
+    full_wbs_path: str,
+    sales_wbs_path: str,
+):
     service = _get_gmail_service()
 
     msg = MIMEMultipart()
     msg["From"] = settings.GMAIL_SENDER
-    msg["To"] = recipient
+    msg["To"] = ", ".join(recipients)
+    if cc:
+        msg["Cc"] = ", ".join(cc)
     msg["Subject"] = f"WBS Generated – {project_title}"
 
     html_body = f"""
