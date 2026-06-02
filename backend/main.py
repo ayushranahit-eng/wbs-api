@@ -438,10 +438,10 @@ async def delete_email(email: str):
 
 
 @app.get("/jobs", tags=["WBS Pipeline"])
-async def list_jobs():
-    """Get all recent jobs from MongoDB."""
-    jobs = await queries.list_jobs()
-    return jobs
+async def list_jobs(page: int = 1, limit: int = 10):
+    """Get paginated jobs from MongoDB."""
+    skip = (page - 1) * limit
+    return await queries.list_jobs(skip=skip, limit=limit)
 
 
 @app.get("/config", tags=["System"])

@@ -471,6 +471,7 @@
       margin-top: 8px;
       display: block;
       margin-left: auto;
+      margin-right: auto;
     }
 
     .btn-primary:hover {
@@ -1436,56 +1437,36 @@
       if (page === "jobs") loadJobs()
     }
 
-    function toDateInputValue(value) {
-      if (!value) return ""
-      if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value
-
-      const match = String(value).match(/^(\d{1,2})-([A-Za-z]{3})-(\d{2}|\d{4})$/)
-      if (!match) return ""
-
-      const months = {
-        jan: "01", feb: "02", mar: "03", apr: "04", may: "05", jun: "06",
-        jul: "07", aug: "08", sep: "09", oct: "10", nov: "11", dec: "12",
-      }
-      const day = match[1].padStart(2, "0")
-      const month = months[match[2].toLowerCase()]
-      const year = match[3].length === 2 ? `20${match[3]}` : match[3]
-
-      return month ? `${year}-${month}-${day}` : ""
-    }
-
-    async function loadJobs() {
+    async function loadJobs(page = 1) {
+      jobsCurrentPage = page
       const tbody = document.getElementById("jobs-tbody")
       const pagination = document.getElementById("jobs-pagination")
       tbody.innerHTML = `<tr><td colspan="9" class="no-jobs">Loading...</td></tr>`
       pagination.innerHTML = ""
       try {
-        const res = await fetch(`${API_BASE}/jobs`)
-        allJobs = await res.json()
-        jobsCurrentPage = 1
-        renderJobsPage()
+        const res = await fetch(`${API_BASE}/jobs?page=${page}&limit=${JOBS_PAGE_SIZE}`)
+        const data = await res.json()
+        renderJobsPage(data.jobs, data.total)
       } catch (e) {
         tbody.innerHTML = `<tr><td colspan="9" class="no-jobs">Failed to load jobs.</td></tr>`
         pagination.innerHTML = ""
       }
     }
 
-    function renderJobsPage() {
+    function renderJobsPage(jobs, total) {
       const tbody = document.getElementById("jobs-tbody")
       const pagination = document.getElementById("jobs-pagination")
 
-      if (!allJobs.length) {
+      if (!jobs || !jobs.length) {
         tbody.innerHTML = `<tr><td colspan="9" class="no-jobs">No jobs found.</td></tr>`
         pagination.innerHTML = ""
         return
       }
 
-      const totalPages = Math.ceil(allJobs.length / JOBS_PAGE_SIZE)
-      jobsCurrentPage = Math.min(Math.max(jobsCurrentPage, 1), totalPages)
+      const totalPages = Math.ceil(total / JOBS_PAGE_SIZE)
       const startIndex = (jobsCurrentPage - 1) * JOBS_PAGE_SIZE
-      const visibleJobs = allJobs.slice(startIndex, startIndex + JOBS_PAGE_SIZE)
 
-      tbody.innerHTML = visibleJobs.map(job => {
+      tbody.innerHTML = jobs.map(job => {
         const cfg = job.project_config || {}
         const tags = Object.entries(cfg)
           .filter(([, v]) => v === "Y")
@@ -1508,23 +1489,40 @@
       }).join("")
 
       const from = startIndex + 1
-      const to = Math.min(startIndex + JOBS_PAGE_SIZE, allJobs.length)
+      const to = Math.min(startIndex + jobs.length, total)
       const pageButtons = Array.from({ length: totalPages }, (_, index) => {
         const page = index + 1
-        return `<button class="page-btn ${page === jobsCurrentPage ? "active" : ""}" type="button" onclick="goToJobsPage(${page})">${page}</button>`
+        return `<button class="page-btn ${page === jobsCurrentPage ? "active" : ""}" type="button" onclick="loadJobs(${page})">${page}</button>`
       }).join("")
 
       pagination.innerHTML = `
-        <span class="pagination-info">Showing ${from}-${to} of ${allJobs.length}</span>
-        <button class="page-btn" type="button" onclick="goToJobsPage(${jobsCurrentPage - 1})" ${jobsCurrentPage === 1 ? "disabled" : ""}>Prev</button>
+        <span class="pagination-info">Showing ${from}-${to} of ${total}</span>
+        <button class="page-btn" type="button" onclick="loadJobs(${jobsCurrentPage - 1})" ${jobsCurrentPage === 1 ? "disabled" : ""}>Prev</button>
         ${pageButtons}
-        <button class="page-btn" type="button" onclick="goToJobsPage(${jobsCurrentPage + 1})" ${jobsCurrentPage === totalPages ? "disabled" : ""}>Next</button>
+        <button class="page-btn" type="button" onclick="loadJobs(${jobsCurrentPage + 1})" ${jobsCurrentPage === totalPages ? "disabled" : ""}>Next</button>
       `
     }
 
     function goToJobsPage(page) {
-      jobsCurrentPage = page
-      renderJobsPage()
+      loadJobs(page)
+    }
+
+    function toDateInputValue(value) {
+      if (!value) return ""
+      if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value
+
+      const match = String(value).match(/^(\d{1,2})-([A-Za-z]{3})-(\d{2}|\d{4})$/)
+      if (!match) return ""
+
+      const months = {
+        jan: "01", feb: "02", mar: "03", apr: "04", may: "05", jun: "06",
+        jul: "07", aug: "08", sep: "09", oct: "10", nov: "11", dec: "12",
+      }
+      const day = match[1].padStart(2, "0")
+      const month = months[match[2].toLowerCase()]
+      const year = match[3].length === 2 ? `20${match[3]}` : match[3]
+
+      return month ? `${year}-${month}-${day}` : ""
     }
 
     function regenJob(job) {

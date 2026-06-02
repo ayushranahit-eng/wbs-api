@@ -34,16 +34,17 @@ async def get_job(job_id: str):
     return job
 
 
-async def list_jobs():
-    cursor = get_db().wbs_jobs.find().sort("created_at", -1).limit(50)
-    jobs = await cursor.to_list(length=50)
+async def list_jobs(skip: int = 0, limit: int = 10):
+    total = await get_db().wbs_jobs.count_documents({})
+    cursor = get_db().wbs_jobs.find().sort("created_at", -1).skip(skip).limit(limit)
+    jobs = await cursor.to_list(length=limit)
     for job in jobs:
         job["_id"] = str(job["_id"])
         if job.get("created_at"):
             job["created_at"] = job["created_at"].isoformat()
         if job.get("completed_at"):
             job["completed_at"] = job["completed_at"].isoformat()
-    return jobs
+    return {"jobs": jobs, "total": total}
 
 
 # ── Managers ──
