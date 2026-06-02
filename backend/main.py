@@ -2,6 +2,7 @@ import asyncio
 import json
 import uuid
 import os
+from io import BytesIO
 from datetime import datetime
 from typing import List, Optional
 
@@ -177,6 +178,11 @@ async def extract_supporting_documents_text(files: Optional[List[UploadFile]]) -
                 raise HTTPException(status_code=400, detail=f"Could not read PDF: {filename}") from exc
         elif lower_name.endswith(".txt") or (file.content_type or "").startswith("text/"):
             text = content.decode("utf-8", errors="ignore")
+        elif lower_name.endswith(".xlsx"):
+            try:
+                text = extract_excel_text(content)
+            except Exception as exc:
+                raise HTTPException(status_code=400, detail=f"Could not read Excel file: {filename}") from exc
         else:
             continue
 
@@ -184,6 +190,58 @@ async def extract_supporting_documents_text(files: Optional[List[UploadFile]]) -
             chunks.append(f"SUPPORTING DOCUMENT - {filename}:\n{text.strip()}")
 
     return "\n\n".join(chunks)
+
+
+def extract_excel_text(content: bytes, max_rows_per_sheet: int = 500) -> str:
+    from openpyxl import load_workbook
+
+    workbook = load_workbook(BytesIO(content), read_only=True, data_only=True)
+    chunks = []
+
+    for sheet in workbook.worksheets:
+        rows = []
+        for row in sheet.iter_rows(values_only=True):
+            values = [format_cell_value(value) for value in row]
+            while values and not values[-1]:
+                values.pop()
+            if any(values):
+                rows.append(values)
+
+        if not rows:
+            continue
+
+        headers = rows[0]
+        data_rows = rows[1:]
+        included_rows = data_rows[:max_rows_per_sheet]
+        max_cols = max(len(headers), *(len(row) for row in included_rows)) if included_rows else len(headers)
+        headers = pad_row(headers, max_cols)
+
+        lines = [
+            f"Sheet: {sheet.title}",
+            f"Columns: {' | '.join(headers)}",
+            "Rows:",
+        ]
+
+        for index, row in enumerate(included_rows, start=1):
+            lines.append(f"{index}. {' | '.join(pad_row(row, max_cols))}")
+
+        if len(data_rows) > max_rows_per_sheet:
+            lines.append(f"Only first {max_rows_per_sheet} rows included from {len(data_rows)} total rows.")
+
+        chunks.append("\n".join(lines))
+
+    workbook.close()
+    return "\n\n".join(chunks)
+
+
+def format_cell_value(value) -> str:
+    if value is None:
+        return ""
+    return str(value).replace("\n", " ").strip()
+
+
+def pad_row(row: List[str], length: int) -> List[str]:
+    return row + [""] * (length - len(row))
 
 
 @app.post("/generate-wbs", response_model=JobResponse, tags=["WBS Pipeline"])

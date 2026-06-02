@@ -199,6 +199,12 @@
       background: #1557b0;
     }
 
+    .file-format-hint {
+      color: #5f6368;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
     .file-list {
       display: flex;
       flex-direction: column;
@@ -989,8 +995,10 @@
                   <label>Supporting Documents</label>
                   <div class="supporting-files">
                     <label class="file-upload-btn" for="supporting_files">Add Supporting Documents</label>
-                    <input type="file" id="supporting_files" accept=".pdf,.txt,application/pdf,text/plain" multiple
-                      onchange="renderSupportingFiles()" />
+                    <div class="file-format-hint">Allowed formats: PDF, TXT, XLSX</div>
+                    <input type="file" id="supporting_files"
+                      accept=".pdf,.txt,.xlsx,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                      multiple onchange="renderSupportingFiles()" />
                     <div class="file-list" id="supporting_file_list"></div>
                   </div>
                 </div>
@@ -1149,7 +1157,7 @@
   </div><!-- end main-wrap -->
 
   <script>
-    const API_BASE = "https://wbs-api-production-4d02.up.railway.app"
+    const API_BASE = "http://127.0.0.1:8000"
 
     // -- MANAGERS --
     let selectedManager = ""
@@ -1568,18 +1576,18 @@
     }
 
     const TOTAL_STEPS = 6
-    let completedSteps = 0
+    let completedAgents = new Set()
 
-    function updateProgressBar(label) {
-      completedSteps++
-      const pct = Math.round((completedSteps / TOTAL_STEPS) * 100)
+    function updateProgressBar(agent, label) {
+      completedAgents.add(agent)
+      const pct = Math.min(100, Math.round((completedAgents.size / TOTAL_STEPS) * 100))
       document.getElementById("progress-bar").style.width = pct + "%"
       document.getElementById("progress-percent").textContent = pct + "%"
       document.getElementById("progress-label-text").textContent = label
     }
 
     function resetProgressBar() {
-      completedSteps = 0
+      completedAgents = new Set()
       document.getElementById("progress-bar").style.width = "0%"
       document.getElementById("progress-percent").textContent = "0%"
       document.getElementById("progress-label-text").textContent = "Starting..."
@@ -1755,13 +1763,16 @@
           if (d.task_count) detail = `${d.task_count} tasks generated for ${d.phase}`
           if (d.recipient) detail = `Sent to ${d.recipient}`
           setStep(agent, "done", detail)
-          updateProgressBar(STEP_META[agent]?.label || agent)
+          updateProgressBar(agent, STEP_META[agent]?.label || agent)
         }
       })
 
       source.addEventListener("done", (e) => {
         const d = JSON.parse(e.data)
         source.close()
+        document.getElementById("progress-bar").style.width = "100%"
+        document.getElementById("progress-percent").textContent = "100%"
+        document.getElementById("progress-label-text").textContent = "Completed"
         showResult(d)
       })
 
