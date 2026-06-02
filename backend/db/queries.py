@@ -41,9 +41,15 @@ async def list_jobs(skip: int = 0, limit: int = 10):
     for job in jobs:
         job["_id"] = str(job["_id"])
         if job.get("created_at"):
-            job["created_at"] = job["created_at"].isoformat()
+            dt = job["created_at"]
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            job["created_at"] = dt.isoformat()
         if job.get("completed_at"):
-            job["completed_at"] = job["completed_at"].isoformat()
+            dt = job["completed_at"]
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            job["completed_at"] = dt.isoformat()
     return {"jobs": jobs, "total": total}
 
 
