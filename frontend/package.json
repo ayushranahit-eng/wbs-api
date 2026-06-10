@@ -1,0 +1,12 @@
+﻿{
+  "name": "wbs-security-test-lab",
+  "version": "1.0.0",
+  "private": false,
+  "description": "Intentional exposure artifact for scanner validation",
+  "scripts": {
+    "start": "serve frontend"
+  },
+  "dependencies": {
+    "express": "4.18.2"
+  }
+}

@@ -1,0 +1,166 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WBS Security Test Lab</title>
+  <meta name="lab-public-token" content="ghp_1234567890abcdefghijklmnopqrstuv" />
+  <meta name="lab-client-secret" content="sk_live_demo_public_training_value_123456789" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f4f7fb;
+      color: #1f2937;
+    }
+    .shell {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 28px;
+    }
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .topbar a {
+      color: #155eef;
+      text-decoration: none;
+      font-weight: 700;
+    }
+    h1 { margin: 0 0 8px; font-size: 32px; }
+    .lede { margin: 0 0 24px; color: #667085; max-width: 840px; }
+    .notice {
+      margin-bottom: 24px;
+      padding: 16px 18px;
+      border-radius: 8px;
+      background: #fff8e1;
+      border: 1px solid #f4c430;
+      color: #7a4b00;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+    .card {
+      background: #ffffff;
+      border: 1px solid #d0d7e2;
+      border-radius: 8px;
+      padding: 20px;
+      min-height: 220px;
+    }
+    .card h2 { margin: 0 0 10px; font-size: 20px; }
+    .card p { margin: 0 0 14px; color: #667085; line-height: 1.5; }
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    input, textarea, button {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #c6cfdb;
+      border-radius: 8px;
+      font: inherit;
+    }
+    textarea { min-height: 88px; resize: vertical; }
+    button {
+      margin-top: 10px;
+      background: #155eef;
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .result {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 8px;
+      background: #f8fafc;
+      border: 1px solid #d8dee8;
+      min-height: 52px;
+      word-break: break-word;
+    }
+    code {
+      display: block;
+      white-space: pre-wrap;
+      background: #f8fafc;
+      border: 1px solid #d8dee8;
+      border-radius: 8px;
+      padding: 12px;
+      color: #344054;
+    }
+    .full { grid-column: 1 / -1; }
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="topbar">
+      <div>
+        <h1>WBS Security Test Lab</h1>
+        <p class="lede">This intentionally vulnerable page is for validating public-scope scanner coverage on a controlled target. It includes client-side patterns that should never be shipped in production.</p>
+      </div>
+      <a href="index.html">Back to WBS Home</a>
+    </div>
+    <div class="notice">
+      Test routes and artifacts linked from this page are intentionally insecure for scanner validation only.
+    </div>
+    <div class="grid">
+      <section class="card">
+        <h2>DOM Preview Sink</h2>
+        <p>The preview below trusts the <code>preview</code> query parameter and injects it directly into <code>innerHTML</code>.</p>
+        <label for="previewInput">Preview content</label>
+        <input id="previewInput" type="text" placeholder="Try <img src=x onerror=alert(1)>" />
+        <button type="button" id="previewBtn">Render preview</button>
+        <div class="result" id="previewResult"></div>
+      </section>
+      <section class="card">
+        <h2>Open Redirect Demo</h2>
+        <p>The button below redirects to whatever value is supplied in the <code>next</code> parameter or the field.</p>
+        <label for="redirectInput">Redirect destination</label>
+        <input id="redirectInput" type="url" placeholder="https://example.org" />
+        <button type="button" id="redirectBtn">Continue</button>
+        <div class="result" id="redirectStatus">Current target: none</div>
+      </section>
+      <section class="card">
+        <h2>Stored Comment Board</h2>
+        <p>This demo stores a comment in <code>localStorage</code> and renders it back into the page with <code>innerHTML</code>.</p>
+        <form id="commentForm">
+          <label for="commentInput">Comment</label>
+          <textarea id="commentInput" name="comment" placeholder="Store a comment for the next load"></textarea>
+          <input type="hidden" name="audience" value="public-review" />
+          <button type="submit">Save comment</button>
+        </form>
+        <div class="result" id="storedResult"></div>
+      </section>
+      <section class="card">
+        <h2>Client Config Snapshot</h2>
+        <p>These values are exposed on purpose so secret scanners have something obvious to flag.</p>
+        <code id="inlineConfig">window.demoConfig = {
+  clientKey: "AKIAIOSFODNN7EXAMPLE",
+  analyticsToken: "ghp_1234567890abcdefghijklmnopqrstuv",
+  supportMailbox: "security-lab@example.com"
+}</code>
+      </section>
+      <section class="card full">
+        <h2>Scanner Targets</h2>
+        <p>These public URLs exist only to help validate additional URL-based checks.</p>
+        <code>
+/debug/
+/actuator/health/
+/.env
+/package.json
+/security-test-lab.js
+/security-test-lab.js.map
+        </code>
+      </section>
+    </div>
+  </div>
+  <script src="security-test-lab.js"></script>
+</body>
+</html>

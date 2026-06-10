@@ -1,0 +1,8 @@
+﻿{
+  "version": 3,
+  "file": "security-test-lab.js",
+  "sources": ["src/security-test-lab.js"],
+  "names": ["demoSecrets", "unsafeRedirect", "renderPreview", "renderStoredComment"],
+  "mappings": "AAAA;AACA;AACA",
+  "sourcesContent": ["const demoSecrets = { awsAccessKey: 'AKIAIOSFODNN7EXAMPLE', githubToken: 'ghp_1234567890abcdefghijklmnopqrstuv' };\nfunction unsafeRedirect(target) { window.location.href = target; }\nfunction renderPreview(value) { document.getElementById('previewResult').innerHTML = value; }\nfunction renderStoredComment() { document.getElementById('storedResult').innerHTML = localStorage.getItem('wbs-security-lab-comment') || 'No saved comment yet'; }"]
+}
