@@ -1,0 +1,322 @@
+{
+  "scanner": "scan.sh",
+  "generated_at": "2026-06-15T09:29:48.801015+00:00",
+  "root": "H:\\-- Ayush Rana 2 --\\WBS AI system\\wbs-api",
+  "codebase": {
+    "directories": [
+      ".vscode",
+      "backend",
+      "backend/agents",
+      "backend/core",
+      "backend/db",
+      "backend/models",
+      "backend/outputs",
+      "backend/scripts",
+      "backend/services",
+      "frontend",
+      "frontend/actuator",
+      "frontend/debug"
+    ],
+    "important_files": [
+      "backend/requirements.txt",
+      "frontend/package.json"
+    ],
+    "languages": [
+      {
+        "name": "Python",
+        "files": 21
+      },
+      {
+        "name": "HTML",
+        "files": 4
+      },
+      {
+        "name": "JSON",
+        "files": 2
+      },
+      {
+        "name": "JavaScript",
+        "files": 2
+      }
+    ],
+    "project_type": [
+      "Python",
+      "Node.js"
+    ],
+    "detected_frameworks": [
+      "FastAPI",
+      "Express"
+    ],
+    "package_managers": [
+      "pip/poetry/pipenv",
+      "npm/yarn/pnpm"
+    ],
+    "apis": [
+      {
+        "method": "POST",
+        "path": "/generate-wbs",
+        "file": "backend/main.py",
+        "line": 247,
+        "framework_hint": "Express/Node"
+      },
+      {
+        "method": "POST",
+        "path": "/generate-wbs-with-documents",
+        "file": "backend/main.py",
+        "line": 253,
+        "framework_hint": "Express/Node"
+      },
+      {
+        "method": "GET",
+        "path": "/status/{job_id}",
+        "file": "backend/main.py",
+        "line": 294,
+        "framework_hint": "Express/Node"
+      },
+      {
+        "method": "GET",
+        "path": "/job/{job_id}",
+        "file": "backend/main.py",
+        "line": 326,
+        "framework_hint": "Express/Node"
+      },
+      {
+        "method": "GET",
+        "path": "/download/{job_id}/{file_type}",
+        "file": "backend/main.py",
+        "line": 336,
+        "framework_hint": "Express/Node"
+      },
+      {
+        "method": "POST",
+        "path": "/agents/scope",
+        "file": "backend/main.py",
+        "line": 360,
+        "framework_hint": "Express/Node"
+      },
+      {
+        "method": "POST",
+        "path": "/agents/modules",
+        "file": "backend/main.py",
+        "line": 366,
+        "framework_hint": "Express/Node"
+      },
+      {
+        "method": "POST",
+        "path": "/agents/phases",
+        "file": "backend/main.py",
+        "line": 372,
+        "framework_hint": "Express/Node"
+      },
+      {
+        "method": "POST",
+        "path": "/agents/tasks",
+        "file": "backend/main.py",
+        "line": 382,
+        "framework_hint": "Express/Node"
+      },
+      {
+        "method": "GET",
+        "path": "/managers",
+        "file": "backend/main.py",
+        "line": 404,
+        "framework_hint": "Express/Node"
+      },
+      {
+        "method": "POST",
+        "path": "/managers",
+        "file": "backend/main.py",
+        "line": 408,
+        "framework_hint": "Express/Node"
+      },
+      {
+        "method": "DELETE",
+        "path": "/managers/{name}",
+        "file": "backend/main.py",
+        "line": 416,
+        "framework_hint": "Express/Node"
+      },
+      {
+        "method": "GET",
+        "path": "/emails",
+        "file": "backend/main.py",
+        "line": 422,
+        "framework_hint": "Express/Node"
+      },
+      {
+        "method": "POST",
+        "path": "/emails",
+        "file": "backend/main.py",
+        "line": 426,
+        "framework_hint": "Express/Node"
+      },
+      {
+        "method": "DELETE",
+        "path": "/emails/{email}",
+        "file": "backend/main.py",
+        "line": 434,
+        "framework_hint": "Express/Node"
+      },
+      {
+        "method": "GET",
+        "path": "/jobs",
+        "file": "backend/main.py",
+        "line": 440,
+        "framework_hint": "Express/Node"
+      },
+      {
+        "method": "GET",
+        "path": "/config",
+        "file": "backend/main.py",
+        "line": 447,
+        "framework_hint": "Express/Node"
+      },
+      {
+        "method": "GET",
+        "path": "/health",
+        "file": "backend/main.py",
+        "line": 452,
+        "framework_hint": "Express/Node"
+      }
+    ],
+    "notes": [
+      "This inventory is based on static file and source-code patterns only.",
+      "API routes are best-effort detections and may miss dynamic routes or framework-specific routing."
+    ]
+  },
+  "summary": {
+    "critical": 7,
+    "high": 2,
+    "medium": 1,
+    "low": 0,
+    "total": 10,
+    "by_category": {
+      "secrets": 9,
+      "sast": 1
+    }
+  },
+  "tool_errors": [],
+  "findings": [
+    {
+      "tool": "custom",
+      "severity": "critical",
+      "category": "secrets",
+      "file": "backend/.env",
+      "line": 1,
+      "title": "Environment file committed or deployed",
+      "note": "This file often contains passwords, API keys, database URLs, and production secrets. If it is exposed or committed, attackers may be able to access real services.",
+      "evidence": "File named .env exists. Content is not printed to avoid exposing secrets.",
+      "description": "An environment file can contain application secrets and credentials.",
+      "remediation": "Remove it from the repository/deployment and rotate any exposed secrets."
+    },
+    {
+      "tool": "custom",
+      "severity": "critical",
+      "category": "secrets",
+      "file": "backend/.env.example",
+      "line": 1,
+      "title": "Environment file committed or deployed",
+      "note": "This file often contains passwords, API keys, database URLs, and production secrets. If it is exposed or committed, attackers may be able to access real services.",
+      "evidence": "File named .env.example exists. Content is not printed to avoid exposing secrets.",
+      "description": "An environment file can contain application secrets and credentials.",
+      "remediation": "Remove it from the repository/deployment and rotate any exposed secrets."
+    },
+    {
+      "tool": "custom",
+      "severity": "critical",
+      "category": "secrets",
+      "file": "frontend/.env",
+      "line": 1,
+      "title": "Environment file committed or deployed",
+      "note": "This file often contains passwords, API keys, database URLs, and production secrets. If it is exposed or committed, attackers may be able to access real services.",
+      "evidence": "File named .env exists. Content is not printed to avoid exposing secrets.",
+      "description": "An environment file can contain application secrets and credentials.",
+      "remediation": "Remove it from the repository/deployment and rotate any exposed secrets."
+    },
+    {
+      "tool": "custom",
+      "severity": "critical",
+      "category": "secrets",
+      "file": "frontend/.env",
+      "line": 3,
+      "title": "AWS access key detected in source/config",
+      "note": "This finding marks a pattern that is commonly linked to security risk. Review the code and confirm whether user input or secrets are involved.",
+      "evidence": "AWS access key pattern matched on this line. Secret value is not printed.",
+      "description": "A credential-like value was found in a source or configuration file.",
+      "remediation": "Move the secret to a protected secret store, rotate it, and remove it from code/history."
+    },
+    {
+      "tool": "custom",
+      "severity": "critical",
+      "category": "secrets",
+      "file": "frontend/security-test-lab.html",
+      "line": 7,
+      "title": "GitHub token detected in source/config",
+      "note": "This finding marks a pattern that is commonly linked to security risk. Review the code and confirm whether user input or secrets are involved.",
+      "evidence": "GitHub token pattern matched on this line. Secret value is not printed.",
+      "description": "A credential-like value was found in a source or configuration file.",
+      "remediation": "Move the secret to a protected secret store, rotate it, and remove it from code/history."
+    },
+    {
+      "tool": "custom",
+      "severity": "critical",
+      "category": "secrets",
+      "file": "frontend/security-test-lab.js",
+      "line": 9,
+      "title": "AWS access key detected in source/config",
+      "note": "This finding marks a pattern that is commonly linked to security risk. Review the code and confirm whether user input or secrets are involved.",
+      "evidence": "AWS access key pattern matched on this line. Secret value is not printed.",
+      "description": "A credential-like value was found in a source or configuration file.",
+      "remediation": "Move the secret to a protected secret store, rotate it, and remove it from code/history."
+    },
+    {
+      "tool": "custom",
+      "severity": "critical",
+      "category": "secrets",
+      "file": "frontend/security-test-lab.js",
+      "line": 10,
+      "title": "GitHub token detected in source/config",
+      "note": "This finding marks a pattern that is commonly linked to security risk. Review the code and confirm whether user input or secrets are involved.",
+      "evidence": "GitHub token pattern matched on this line. Secret value is not printed.",
+      "description": "A credential-like value was found in a source or configuration file.",
+      "remediation": "Move the secret to a protected secret store, rotate it, and remove it from code/history."
+    },
+    {
+      "tool": "custom",
+      "severity": "high",
+      "category": "secrets",
+      "file": ".git",
+      "line": 1,
+      "title": ".git directory present",
+      "note": "A .git folder can expose source history, old secrets, deleted files, branches, and commit metadata. It should never be web-accessible or deployed as part of a public app.",
+      "evidence": "Directory named .git exists in the scanned tree.",
+      "description": "A Git metadata directory is present under the scanned tree.",
+      "remediation": "Do not deploy .git directories to web-servable or production paths."
+    },
+    {
+      "tool": "custom",
+      "severity": "high",
+      "category": "secrets",
+      "file": "backend/scripts/supabase_schema.sql",
+      "line": 1,
+      "title": "Database dump file present",
+      "note": "Database dump files may contain real user data, passwords, emails, tokens, or internal records. Leaving them in a code or web folder is high risk.",
+      "evidence": "File extension .sql found at backend/scripts/supabase_schema.sql.",
+      "description": "SQL dump files often contain sensitive production or staging data.",
+      "remediation": "Remove database dumps from deployed/source paths and store backups securely."
+    },
+    {
+      "tool": "semgrep",
+      "severity": "medium",
+      "category": "sast",
+      "file": "backend/scripts/gmail_auth.py",
+      "line": 41,
+      "title": "Code appears to log secret or token data.",
+      "note": "Secrets written to logs can leak through log files, dashboards, backups, or support bundles.",
+      "evidence": "print(f\"GMAIL_REFRESH_TOKEN={creds.refresh_token}\")",
+      "description": "Rule python-logging-secret matched this source location.",
+      "remediation": "Do not log passwords, tokens, authorization headers, or secret values."
+    }
+  ],
+  "report_file": "security-report-20260615-145924.json"
+}
